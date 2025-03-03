@@ -35,7 +35,7 @@ const Featured = () => {
               everywhere he performs. He's not awesome "for his age". He's
               simply awesome! Performing professionally since he was 10, his
               confidence and audience participation defies his years. He's a
-              cutie too!
+              cutie too!!
             </p>
             <Link
               className="font-medium text-rose hover:text-white duration-300 transition-all ease-linear"
