@@ -13,6 +13,7 @@ import useScroll from "@/hooks/useScroll";
 import { twMerge } from "tailwind-merge";
 import MobileMenu from "./mobile-menu";
 import FlyoutLink, { homeLinks } from "./Dropdown/FlyoutLink";
+import "@/styles/header.css";
 
 //method call
 const Header = () => {
@@ -29,8 +30,11 @@ const Header = () => {
           : "bg-transparent"
       )}
     >
-      <Link className="text-xl md:text-2xl leading-snug font-bold" href="/">
-        Dreadrock Software
+      <Link
+        className="logo text-xl md:text-2xl leading-snug font-bold"
+        href="/"
+      >
+        <img src="/img/landon/logo.jpg" alt="logo" />
       </Link>
       <ul className="hidden lg:flex items-center font-medium gap-8 lg:gap-12 uppercase">
         <li>

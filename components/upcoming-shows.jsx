@@ -22,7 +22,6 @@ const UpcomingShows = () => {
         <div className="flex divide-y divide-light-dark flex-col">
           {shows.map((show) => {
             const date1 = new Date(show.date);
-            console.log("🚀 ~ {shows.map ~ date1:", date1);
             const date2 = new Date(
               date1.getTime() + show.duration * 60 * 60 * 1000
             );

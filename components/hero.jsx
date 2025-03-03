@@ -1,6 +1,7 @@
 // Main container wrapper 1170px d31448
 import Container from "./container";
 import Image from "next/image";
+import "@/styles/hero.css";
 //method call
 const Hero = () => {
   return (
@@ -12,10 +13,9 @@ const Hero = () => {
       <Container className="relative z-30 flex flex-col justify-center min-h-screen">
         <h1
           data-aos="fade-up"
-          className="text-7xl sm:text-9xl md:text-[160px] lg:text-[180px] uppercase text-center leading-snug md:leading-[160px] font-bold my-20 sm:my-32 md:my-60"
+          className="hero-text text-7xl sm:text-9xl md:text-[160px] lg:text-[180px] uppercase text-center leading-snug md:leading-[160px] font-bold my-20 sm:my-32 md:my-60"
         >
-          LANDON <br />
-          ROCKS!
+          LANDON
         </h1>
         <div className="flex flex-col lg:flex-row gap-10 items-center justify-between">
           <p className="text-base text-center lg:text-start font-medium uppercase">
