@@ -37,7 +37,7 @@ const Header = () => {
         <img src="/img/landon/logo.jpg" alt="logo" />
       </Link>
       <ul className="hidden lg:flex items-center font-medium gap-8 lg:gap-12 uppercase">
-        <li>
+        {/* <li>
           <FlyoutLink links={homeLinks}>
             <Link
               className="uppercase ease-linear duration-300 transition-all hover:text-rose"
@@ -46,7 +46,7 @@ const Header = () => {
               Home
             </Link>
           </FlyoutLink>
-        </li>
+        </li> */}
 
         {navigationLinks.map((link) => (
           <li
