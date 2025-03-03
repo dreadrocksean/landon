@@ -41,7 +41,7 @@ const Featured = () => {
               className="font-medium text-rose hover:text-white duration-300 transition-all ease-linear"
               href="/text/more-about.js"
             >
-              MORE ABOUT LANDON
+              MORE ABOUT LANDON -&gt;
             </Link>
           </div>
           <div data-aos="fade-up" className="flex-1 relative isolate">
