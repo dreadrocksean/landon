@@ -45,6 +45,33 @@ export const shows = [
     date: "2025-03-30T19:00:00-05:00",
     duration: 3,
   },
+  {
+    id: 7,
+    venue: "Murphy's Corner",
+    title: "Friday Night Live",
+    image: "/img/home/g5.jpg",
+    status: "free",
+    date: "2025-04-18T19:00:00-05:00",
+    duration: 3,
+  },
+  {
+    id: 8,
+    venue: "Murphy's Corner",
+    title: "Brunch with Landon",
+    image: "/img/home/g5.jpg",
+    status: "free",
+    date: "2025-04-27T12:00:00-05:00",
+    duration: 3,
+  },
+  {
+    id: 8,
+    venue: "Murphy's Corner",
+    title: "Friday Night Live",
+    image: "/img/home/g5.jpg",
+    status: "free",
+    date: "2025-05-30T19:00:00-05:00",
+    duration: 3,
+  },
 ];
 //profile
 export const members = [
