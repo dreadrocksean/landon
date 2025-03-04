@@ -15,32 +15,32 @@ import LayoutProvider from "./LayoutProvider";
 
 // Homepage Metadata
 export const metadata = {
-  title: "Feelit - Personal Musical Expose Nextjs Template",
+  title: "Landon Music - Music website",
   description:
-    "FeeliT is a great Nextjs Template Music & Podcast Web designed for accelerate your online music, podcast industry and audio streaming web application design process.",
+    "Landon Music is a great Nextjs Template Music Web designed to accelerate his online presence",
 };
 
-export default function RootLayout({ children }) {
-  return (
-    <html lang="en">
-      <body
-        className={twMerge(
-          spaceGrotesk.className,
-          dMSans.variable,
-          kumbhSans.variable,
-          pacifico.variable,
-          poppins.variable
-        )}
-      >
-        <AnimationProvider>
-          <LayoutProvider>
-            <div className="layout">
-              <Settings />
-              {children}
-            </div>
-          </LayoutProvider>
-        </AnimationProvider>
-      </body>
-    </html>
-  );
-}
+export const RootLayout = ({ children }) => (
+  <html lang="en">
+    <body
+      className={twMerge(
+        spaceGrotesk.className,
+        dMSans.variable,
+        kumbhSans.variable,
+        pacifico.variable,
+        poppins.variable
+      )}
+    >
+      <AnimationProvider>
+        <LayoutProvider>
+          <div className="layout">
+            <Settings />
+            {children}
+          </div>
+        </LayoutProvider>
+      </AnimationProvider>
+    </body>
+  </html>
+);
+
+export default RootLayout;

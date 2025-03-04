@@ -9,6 +9,24 @@ import Image from "next/image";
 import { useLayout } from "@/app/LayoutProvider";
 import { twMerge } from "tailwind-merge";
 
+const parseDate = (date) => ({
+  day: date.getDate(),
+  hr: date.toLocaleString("default", { timeStyle: "short" }),
+  month: date.toLocaleString("default", { month: "short" }),
+  week: date.toLocaleString("default", { weekday: "short" }),
+  min: date.toLocaleString("default", { minute: "numeric" }),
+});
+
+const getSchedule = (date, duration) => {
+  const start = new Date(date);
+  const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
+
+  return {
+    start: parseDate(start),
+    end: parseDate(end),
+  };
+};
+
 //method call
 const UpcomingShows = () => {
   const { isRTL } = useLayout();
@@ -21,31 +39,7 @@ const UpcomingShows = () => {
         </SectionHeading>
         <div className="flex divide-y divide-light-dark flex-col">
           {shows.map((show) => {
-            const date1 = new Date(show.date);
-            const date2 = new Date(
-              date1.getTime() + show.duration * 60 * 60 * 1000
-            );
-
-            const times = {
-              start: {
-                day: date1.getDate(),
-                hr: date1.toLocaleString("default", {
-                  timeStyle: "short",
-                }),
-                month: date1.toLocaleString("default", { month: "short" }),
-                week: date1.toLocaleString("default", { weekday: "short" }),
-                min: date1.toLocaleString("default", { minute: "numeric" }),
-              },
-              end: {
-                day: date2.getDate(),
-                hr: date2.toLocaleString("default", {
-                  timeStyle: "short",
-                }),
-                month: date2.toLocaleString("default", { month: "short" }),
-                week: date2.toLocaleString("default", { weekday: "short" }),
-                min: date2.toLocaleString("default", { minute: "numeric" }),
-              },
-            };
+            const schedule = getSchedule(show.date, show.duration);
 
             return (
               <Link
@@ -56,11 +50,11 @@ const UpcomingShows = () => {
                 <div className="flex flex-col md:flex-row items-center gap-6 md:gap-16">
                   <div className="flex gap-10">
                     <span className="text-5xl font-bold">
-                      {times.start.day}
+                      {schedule.start.day}
                     </span>
                     <div className="flex flex-col font-medium">
-                      <span>{times.start.month}</span>
-                      <span>{times.start.week}</span>
+                      <span>{schedule.start.month}</span>
+                      <span>{schedule.start.week}</span>
                     </div>
                   </div>
                   <h4 className="font-bold transition-all duration-300 ease-linear group-hover:text-rose  text-xl text-center md:text-start md:line-clamp-1">
@@ -80,7 +74,7 @@ const UpcomingShows = () => {
                   height={195}
                   alt={show.title}
                 />
-                <span className="font-medium uppercase text-rose">{`${times.start.hr} - ${times.end.hr}`}</span>
+                <span className="font-medium uppercase text-rose">{`${schedule.start.hr} - ${schedule.end.hr}`}</span>
               </Link>
             );
           })}
