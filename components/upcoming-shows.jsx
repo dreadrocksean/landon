@@ -35,7 +35,7 @@ const UpcomingShows = () => {
     <div id="shows" className="bg-bg-dark">
       <Container className="py-section">
         <SectionHeading>
-          <h2 className="uppercase text-center">our upcoming shows</h2>
+          <h2 className="uppercase text-center">upcoming shows</h2>
         </SectionHeading>
         <div className="flex divide-y divide-light-dark flex-col">
           {shows.map((show) => {
