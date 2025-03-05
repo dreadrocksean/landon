@@ -100,7 +100,10 @@ const Featured = () => {
           </div>
         </div>
         {showMore && (
-          <div class="more relative z-20 lg:items-center px-container">
+          <div
+            data-aos="fade-up"
+            class="more relative z-20 lg:items-center px-container"
+          >
             <MoreFeatured />
             {renderShowMore()}
           </div>
