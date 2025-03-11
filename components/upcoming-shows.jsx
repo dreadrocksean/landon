@@ -60,6 +60,9 @@ const UpcomingShows = () => {
                   <h4 className="font-bold transition-all duration-300 ease-linear group-hover:text-rose  text-xl text-center md:text-start md:line-clamp-1">
                     {show.venue}
                   </h4>
+                  <h4 className="transition-all duration-300 ease-linear group-hover:text-rose text-center md:text-start md:line-clamp-1">
+                    {show.title}
+                  </h4>
                 </div>
 
                 <Image
