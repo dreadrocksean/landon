@@ -60,7 +60,7 @@ export const feature = {
 };
 export const shows = [
   {
-    id: 0,
+    id: 1,
     venue: "Murphy's Corner",
     title: "St. Pattie's Morning Show",
     image: "/img/landon/15.jpg",
@@ -69,7 +69,7 @@ export const shows = [
     duration: 3,
   },
   {
-    id: 1,
+    id: 2,
     venue: "Jerry's Bait Shop",
     title: "Jerry's Pre Jam",
     image: "/img/landon/8.jpg",
@@ -78,22 +78,13 @@ export const shows = [
     duration: 1,
   },
   {
-    id: 2,
+    id: 3,
     venue: "Murphy's Corner",
     title: "Arch MI Corporate Bash",
     image: "/img/landon/9.jpg",
     status: "free",
     date: "2025-03-26T17:00:00-05:00",
     duration: 2,
-  },
-  {
-    id: 3,
-    venue: "Murphy's Corner",
-    title: "Friday Night Live",
-    image: "/img/landon/10.jpg",
-    status: "free",
-    date: "2025-03-27T19:00:00-05:00",
-    duration: 3,
   },
   {
     id: 4,
