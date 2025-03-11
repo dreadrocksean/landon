@@ -5,6 +5,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import Container from "./container";
 import MoreFeatured from "./more-featured";
+import { feature } from "@/data/data";
 
 import "@/styles/featured.css";
 
@@ -45,6 +46,11 @@ const Featured = () => {
       </div>
     );
 
+  const heading = feature.heading;
+  const words = heading.split(" ");
+  const ln1 = words?.slice(0, words.length / 2).join(" ");
+  const ln2 = words?.slice(words.length / 2).join(" ");
+
   return (
     <section
       id="featured_music"
@@ -54,17 +60,9 @@ const Featured = () => {
       <Container>
         <div className="relative py-section z-20 flex flex-col lg:flex-row gap-20 lg:items-center px-container">
           <div data-aos="fade-up" className="flex-1 text-center lg:text-start ">
-            <h2>
-              DISCOVER KANSAS CITY'S
-              <br className="hidden lg:block" />
-              NEWEST PHENOMENON
-            </h2>
+            <h2>{heading}</h2>
             <p className="more text-cyan mx-auto lg:mx-0 mt-10 mb-12 max-w-[533px]">
-              Just 12 years old, Landon Bartholomew electrifies audiences
-              everywhere he performs. He's not awesome "for his age". He's
-              simply awesome! Performing professionally since he was 10, his
-              confidence and audience participation defies his years. He's a
-              cutie too!
+              {feature.about}
             </p>
             {renderShowMore()}
           </div>

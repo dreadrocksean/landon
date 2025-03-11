@@ -1,5 +1,73 @@
 //play list
+export const feature = {
+  heading: "DISCOVER KANSAS CITY'S NEWEST PHENOMENON",
+  about:
+    "Just 12 years old, Landon Bartholomew electrifies audiences everywhere he performs. He's not awesome &apos;for his age&apos;. He's simply awesome! Performing professionally since he was 10, his confidence and audience participation defies his years. He's a cutie too!",
+  more: [
+    `For his 5th birthday, Landon received an electronic piano. The same one he
+      plays till today. We soon found a teacher, John, who had a lot of other
+      things going on, and was soon too busy to teach Landon. He suggested we
+      try another teacher, Tatiana Kuleshova, his wife. Though thoroughly
+      booked, Tatiana squeezed Landon in just for her husband and never looked
+      back. The boy has since become one of her star pupils.`,
+
+    `At 6, he wanted to play his favorite pop songs and stop the classics to
+      which he was met with - "No". The only way he got to play pop was if he
+      met his classical training requirements. Today we loves the classics with
+      Tchaikovski as his favourite composer. But we digress.`,
+
+    `By the time Landon was 7, he had gravitated toward singing, which was fun
+      for him but was obviously a piano first, singing second deal. We
+      encouraged him to practice singing without the piano. We explained that
+      the singing should not be the accompaniment to the piano but the other way
+      round. It instantly clicked and it changed everything. He still sings at
+      the top of his lungs in the shower. This is when he first learnt Bohemian
+      Rhapsody, the short version.`,
+
+    `At 10, we asked Mike Rounkles, the owner of Jerry's Bait Shop, a
+      successful and long running local music bar, if Landon could do an hour
+      long show there. The performance impressed Mike so much that he offered
+      Landon every last Wed for an hour before their famous Jam Night. Paid him
+      50 bucks and a Landon negotiated Pizza, his favourite food.`,
+
+    `This is where Landon learnt to perform. Jerry's was his stomping ground.
+      He started out terrified to play. Terrified to takl to the audience. We
+      worked out creative ways of segueing one song to another, what he would
+      say after every other song and rehearsed those things the weekend before
+      every show. He kept adding songs to his repertoire and when it got to 40
+      songs we started to accept private gigs. He experimented at Jerry's,
+      showcased everywhere else.`,
+
+    `He's now up to 60+ songs and, though he's still only 12, no one can
+      believe the level of maturity and comfort with which he holds rapport and
+      laughs at himself on and off the stage. The downside to that is - puberty.
+      Male vocalists suffer and he is in the smack in the middle of the
+      transition. Poor fella.`,
+
+    `Landon would love to be invited to perform at other schools so that he
+      could meet new kids and also hopefully inspire other young aspiring
+      artists to work at their dreams. <br />
+      He's a well rounded, compassionate and cool, easy going lad with a superb
+      sense of humor. <br />
+      He's straight A's already acing calculus. Striker and captain of his club
+      soccer team. As a track athlete, the 400m is his pet distance (the soccer
+      advantage). Built his own powerful gaming computer from scratch with the
+      money he earned. Loves weight training with his older buddies and is a
+      great big brother to his little sister.`,
+
+    `We wish him the best!`,
+  ],
+};
 export const shows = [
+  {
+    id: 0,
+    venue: "Murphy's Corner",
+    title: "St. Pattie's Morning Show",
+    image: "/img/landon/15.jpg",
+    status: "free",
+    date: "2025-03-17T10:00:00-05:00",
+    duration: 3,
+  },
   {
     id: 1,
     venue: "Jerry's Bait Shop",
@@ -37,7 +105,7 @@ export const shows = [
     duration: 3,
   },
   {
-    id: 6,
+    id: 5,
     venue: "Murphy's Corner",
     title: "Sunday Funday",
     image: "/img/landon/12.jpg",
@@ -46,7 +114,7 @@ export const shows = [
     duration: 3,
   },
   {
-    id: 7,
+    id: 6,
     venue: "Murphy's Corner",
     title: "Friday Night Live",
     image: "/img/landon/13.jpg",
@@ -55,7 +123,7 @@ export const shows = [
     duration: 3,
   },
   {
-    id: 8,
+    id: 7,
     venue: "Murphy's Corner",
     title: "Brunch with Landon",
     image: "/img/landon/14.jpg",

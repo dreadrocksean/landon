@@ -42,9 +42,9 @@ const UpcomingShows = () => {
             const schedule = getSchedule(show.date, show.duration);
 
             return (
-              <Link
+              <div
                 key={show.id}
-                href="/"
+                // href="/"
                 className="flex gap-4 flex-col md:flex-row group transition-all relative isolate py-8 items-center justify-between"
               >
                 <div className="flex flex-col md:flex-row items-center gap-6 md:gap-16">
@@ -58,7 +58,7 @@ const UpcomingShows = () => {
                     </div>
                   </div>
                   <h4 className="font-bold transition-all duration-300 ease-linear group-hover:text-rose  text-xl text-center md:text-start md:line-clamp-1">
-                    {show.title}
+                    {show.venue}
                   </h4>
                 </div>
 
@@ -75,7 +75,7 @@ const UpcomingShows = () => {
                   alt={show.title}
                 />
                 <span className="font-medium uppercase text-rose">{`${schedule.start.hr} - ${schedule.end.hr}`}</span>
-              </Link>
+              </div>
             );
           })}
         </div>
