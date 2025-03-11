@@ -53,7 +53,7 @@ const UpcomingShows = () => {
                       {schedule.start.day}
                     </span>
                     <div className="flex flex-col font-medium">
-                      <span>{schedule.start.month}</span>
+                      <span className="uppercase">{schedule.start.month}</span>
                       <span>{schedule.start.week}</span>
                     </div>
                   </div>
