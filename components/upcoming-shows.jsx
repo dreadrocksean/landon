@@ -9,6 +9,8 @@ import Image from "next/image";
 import { useLayout } from "@/app/LayoutProvider";
 import { twMerge } from "tailwind-merge";
 
+import "@/styles/shows.css";
+
 const parseDate = (date) => ({
   day: date.getDate(),
   hr: date.toLocaleString("default", { timeStyle: "short" }),
@@ -40,12 +42,12 @@ const UpcomingShows = () => {
         <div className="flex divide-y divide-light-dark flex-col">
           {shows.map((show) => {
             const schedule = getSchedule(show.date, show.duration);
+            const cancelled = show.status === 'cancelled';
 
             return (
               <div
                 key={show.id}
-                // href="/"
-                className="flex gap-4 flex-col md:flex-row group transition-all relative isolate py-8 items-center justify-between"
+                className={`${cancelled?"disabled":""} flex gap-4 flex-col md:flex-row group transition-all relative isolate py-8 items-center justify-between`}
               >
                 <div className="flex flex-col md:flex-row items-center gap-6 md:gap-16">
                   <div className="flex gap-10">
@@ -57,27 +59,45 @@ const UpcomingShows = () => {
                       <span>{schedule.start.week}</span>
                     </div>
                   </div>
-                  <h4 className="font-bold transition-all duration-300 ease-linear group-hover:text-rose  text-xl text-center md:text-start md:line-clamp-1">
+                  <h4
+                    className={`${
+                      cancelled
+                        ? "strike"
+                        : "transition-all duration-300 ease-linear group-hover:text-rose"
+                    } font-bold text-xl text-center md:text-start md:line-clamp-1`}
+                  >
                     {show.venue}
                   </h4>
-                  <h4 className="transition-all duration-300 ease-linear group-hover:text-rose text-center md:text-start md:line-clamp-1">
+                  <h4
+                    className={`${
+                      cancelled
+                        ? "strike"
+                        : "transition-all duration-300 ease-linear group-hover:text-rose"
+                    }  text-center md:text-start md:line-clamp-1`}
+                  >
                     {show.title}
                   </h4>
                 </div>
 
-                <Image
-                  src={show.image}
-                  className={twMerge(
-                    "absolute  scale-0 group-hover:scale-100 left-1/3  duration-500 transition-all top-5 md:top-[-40px] rotate-0  w-[13rem] h-[17rem] object-cover",
-                    isRTL
-                      ? "md:right-2/3 group-hover:-rotate-45"
-                      : "md:left-2/3 group-hover:rotate-45"
-                  )}
-                  width={220}
-                  height={195}
-                  alt={show.title}
-                />
-                <span className="font-medium uppercase text-rose">{`${schedule.start.hr} - ${schedule.end.hr}`}</span>
+                {!cancelled && (
+                  <Image
+                    src={show.image}
+                    className={twMerge(
+                      "absolute  scale-0 group-hover:scale-100 left-1/3  duration-500 transition-all top-5 md:top-[-40px] rotate-0  w-[13rem] h-[17rem] object-cover",
+                      isRTL
+                        ? "md:right-2/3 group-hover:-rotate-45"
+                        : "md:left-2/3 group-hover:rotate-45"
+                    )}
+                    width={220}
+                    height={195}
+                    alt={show.title}
+                  />
+                )}
+                {cancelled ? (
+                  <span className="cancelled">CANCELLED</span>
+                ) : (
+                  <span className="font-medium uppercase text-rose">{`${schedule.start.hr} - ${schedule.end.hr}`}</span>
+                )}
               </div>
             );
           })}

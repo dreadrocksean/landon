@@ -1,0 +1,15 @@
+/* Hero */
+.cancelled {
+  text-transform: uppercase;
+  font-size: 1.75rem;
+  font-weight: 700;
+  rotate: -20deg;
+  color: #fff;
+}
+.strike {
+  text-decoration: line-through;
+}
+.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}

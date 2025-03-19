@@ -73,7 +73,7 @@ export const shows = [
     venue: "Jerry's Bait Shop",
     title: "Jerry's Pre Jam",
     image: "/img/landon/8.jpg",
-    status: "free",
+    status: "cancelled",
     date: "2025-03-19T18:30:00-05:00",
     duration: 1,
   },
