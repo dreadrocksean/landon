@@ -123,6 +123,15 @@ export const shows = [
     duration: 3,
   },
   {
+    id: 3,
+    venue: "Jerry's Bait Shop",
+    title: "Pre Jam Show",
+    image: "/img/landon/9.jpg",
+    status: "free",
+    date: "2025-04-29T18:30:00-05:00",
+    duration: 1,
+  },
+  {
     id: 8,
     venue: "Murphy's Corner",
     title: "Friday Night Live",
