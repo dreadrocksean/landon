@@ -123,7 +123,7 @@ export const shows = [
     duration: 3,
   },
   {
-    id: 3,
+    id: 8,
     venue: "Jerry's Bait Shop",
     title: "Pre Jam Show",
     image: "/img/landon/9.jpg",
@@ -132,7 +132,16 @@ export const shows = [
     duration: 1,
   },
   {
-    id: 8,
+    id: 9,
+    venue: "Murphy's Corner",
+    title: "Mothers Day Brunch",
+    image: "/img/landon/15.jpg",
+    status: "free",
+    date: "2025-05-15T11:30:00-05:00",
+    duration: 3,
+  },
+  {
+    id: 10,
     venue: "Murphy's Corner",
     title: "Friday Night Live",
     image: "/img/landon/15.jpg",
