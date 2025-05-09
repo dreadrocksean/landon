@@ -136,7 +136,7 @@ export const shows = [
     venue: "Murphy's Corner",
     title: "Mothers Day Brunch",
     image: "/img/landon/15.jpg",
-    status: "free",
+    status: "cancelled",
     date: "2025-05-15T11:30:00-05:00",
     duration: 3,
   },
