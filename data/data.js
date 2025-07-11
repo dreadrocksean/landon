@@ -2,7 +2,7 @@
 export const feature = {
   heading: "DISCOVER KANSAS CITY'S NEWEST PHENOMENON",
   about:
-    "Just 12 years old, Landon Bartholomew electrifies audiences everywhere he performs. He's not awesome &apos;for his age&apos;. He's simply awesome! Performing professionally since he was 10, his confidence and audience participation defies his years. He's a cutie too!",
+    "Just 13 years old, Landon Bartholomew electrifies audiences everywhere he performs. He's not awesome &apos;for his age&apos;. He's simply awesome! Performing professionally since he was 10, his confidence and audience participation defies his years. He's a cutie too!",
   more: [
     `For his 5th birthday, Landon received an electronic piano. The same one he
       plays till today. We soon found a teacher, John, who had a lot of other
