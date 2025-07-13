@@ -9,7 +9,7 @@ import useKey from "@/hooks/useKey";
 // Navigation links data
 import { navigationLinks } from "@/utils/constants";
 
-//method call 
+//method call
 const MobileMenu = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 

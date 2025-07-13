@@ -1,4 +1,9 @@
 //play list
+
+export const user = {
+  email: "landonsean2012@gmail.com",
+};
+
 export const feature = {
   heading: "DISCOVER KANSAS CITY'S NEWEST PHENOMENON",
   about:
@@ -58,6 +63,7 @@ export const feature = {
     `We wish him the best!`,
   ],
 };
+
 export const shows = [
   {
     id: 1,

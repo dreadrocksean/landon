@@ -1,10 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Container from "./container";
 import SectionHeading from "./section-heading";
 // Mock data for upcoming shows
-import { shows } from "@/data/data";
+import useShows from "@/hooks/useShows";
 import Image from "next/image";
 import { useLayout } from "@/app/LayoutProvider";
 import { twMerge } from "tailwind-merge";
@@ -19,6 +20,15 @@ const parseDate = (date) => ({
   min: date.toLocaleString("default", { minute: "numeric" }),
 });
 
+const getScheduleFromTimestamps = ({ start, stop }) => {
+  const startDate = start.toDate();
+  const endDate = stop.toDate();
+  return {
+    start: parseDate(startDate),
+    end: parseDate(endDate),
+  };
+};
+
 const getSchedule = (date, duration) => {
   const start = new Date(date);
   const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
@@ -32,6 +42,7 @@ const getSchedule = (date, duration) => {
 //method call
 const UpcomingShows = () => {
   const { isRTL } = useLayout();
+  const { shows, isLoading, error } = useShows();
 
   return (
     <div id="shows" className="bg-bg-dark">
@@ -41,13 +52,19 @@ const UpcomingShows = () => {
         </SectionHeading>
         <div className="flex divide-y divide-light-dark flex-col">
           {shows.map((show) => {
-            const schedule = getSchedule(show.date, show.duration);
-            const cancelled = show.status === 'cancelled';
+            // const schedule = getSchedule(show.scheduledStart, show.duration);
+            const schedule = getScheduleFromTimestamps({
+              start: show.scheduledStart,
+              stop: show.scheduledStop,
+            });
+            const cancelled = show.status === "cancelled";
 
             return (
               <div
                 key={show.id}
-                className={`${cancelled?"disabled":""} flex gap-4 flex-col md:flex-row group transition-all relative isolate py-8 items-center justify-between`}
+                className={`${
+                  cancelled ? "disabled" : ""
+                } flex gap-4 flex-col md:flex-row group transition-all relative isolate py-8 items-center justify-between`}
               >
                 <div className="flex flex-col md:flex-row items-center gap-6 md:gap-16">
                   <div className="flex gap-10">
