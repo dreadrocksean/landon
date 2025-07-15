@@ -3,3 +3,10 @@
   -webkit-text-stroke: 2px white;
   color: #0c085e;
 }
+.short-hero {
+  height: 10rem;
+}
+.scroll-list {
+  max-height: 10rem;
+  overflow-y: auto;
+}

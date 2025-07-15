@@ -1,18 +1,18 @@
 "use client";
 
 import React from "react";
-import CalForm from "./CalForm";
 import Header from "@/components/header";
 import Hero from "@/components/hero";
+import LoginForm from "@/app/login/login-form";
 import Footer from "@/components/footer";
 
-const Calendar = () => (
+export const Login = () => (
   <main className="bg-bg-dark text-white text-base">
     <Header />
     <Hero basic={true} />
-    <CalForm />
+    <LoginForm />
     <Footer />
   </main>
 );
 
-export default Calendar;
+export default Login;

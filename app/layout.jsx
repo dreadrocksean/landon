@@ -12,6 +12,7 @@ import {
 import AnimationProvider from "./AnimationProvider";
 import Settings from "@/components/Settings";
 import LayoutProvider from "./LayoutProvider";
+import "@/styles/layout.css";
 
 // Homepage Metadata
 export const metadata = {
@@ -33,10 +34,10 @@ export const RootLayout = ({ children }) => (
     >
       <AnimationProvider>
         <LayoutProvider>
-          <div className="layout">
+          <>
             <Settings />
             {children}
-          </div>
+          </>
         </LayoutProvider>
       </AnimationProvider>
     </body>

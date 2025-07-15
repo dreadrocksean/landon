@@ -196,27 +196,6 @@ export const getShowsByArtistId = async ({
   }
 };
 
-export const getShow = async ({
-  id,
-  artistId,
-}: {
-  id: string;
-  artistId: string;
-}): Promise<Show | null> => {
-  const showsRef = collection(
-    db,
-    `artists/${artistId}/shows`
-  ) as CollectionReference<FirestoreShow, FirestoreShow>;
-  const q = query(showsRef, where("id", "==", id));
-  const snap = await getDoc(doc(showsRef, id));
-  return snap.exists()
-    ? {
-        id: snap.id,
-        ...snap.data(),
-      }
-    : null;
-};
-
 export const listShowsForArtist = async (artistId: string): Promise<Show[]> => {
   const showsRef = collection(
     db,

@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa6";
 import SocialIcon from "./icon";
 import useScroll from "@/hooks/useScroll";
+import useAuth from "@/hooks/useAuth";
 import { twMerge } from "tailwind-merge";
 import MobileMenu from "./mobile-menu";
 import FlyoutLink, { homeLinks } from "./Dropdown/FlyoutLink";
@@ -20,6 +21,7 @@ const Header = () => {
   // Custom hooks for get scroll position
   const scrollPosition = useScroll();
   const isScroll = scrollPosition.y > 50;
+  const { isAuthenticated } = useAuth();
 
   return (
     <nav
@@ -48,14 +50,19 @@ const Header = () => {
           </FlyoutLink>
         </li> */}
 
-        {navigationLinks.map((link) => (
-          <li
-            className="ease-linear duration-300 transition-all hover:text-rose"
-            key={link.id}
-          >
-            <Link href={link.route}>{link.title}</Link>
-          </li>
-        ))}
+        {navigationLinks.map(
+          (link) =>
+            (typeof link.auth === "undefined" ||
+              (!link.auth && !isAuthenticated) ||
+              (isAuthenticated && link.auth)) && (
+              <li
+                className="ease-linear duration-300 transition-all hover:text-rose"
+                key={link.id}
+              >
+                <Link href={link.route}>{link.title}</Link>
+              </li>
+            )
+        )}
       </ul>
       <div>
         {/* <div className="hidden lg:flex items-center gap-5">
