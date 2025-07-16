@@ -9,6 +9,7 @@ import useAuth from "./useAuth";
 type UseShowsReturn = {
   shows: Show[];
   addShow: (show: Show) => void;
+  getShows: () => Promise<void>;
   removeShow: (params: { showId: string; artistId: string }) => Promise<void>;
   user: User | null;
   artist: Artist | null;
@@ -23,17 +24,17 @@ const useShows = (): UseShowsReturn => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getShows = async (artistId?: string): Promise<void> => {
+  const getShows = async (): Promise<void> => {
     try {
-      if (!artistId) {
+      if (!artist?.id) {
         setShows([]);
         throw new Error("Artist ID is required to fetch shows");
       }
-      console.log("Fetching shows for artist ID:", artistId);
+      console.log("Fetching shows for artist ID:", artist?.id);
       setIsLoading(true);
       setError(null);
       const shows = await getShowsByArtistId({
-        artistId,
+        artistId: artist.id,
         setError,
         setIsLoading,
       });
@@ -56,7 +57,7 @@ const useShows = (): UseShowsReturn => {
       console.log("Fetching artist by user ID:", userId);
       const artist = await getArtistByUserId({ userId });
       setArtist(artist);
-      getShows(artist?.id);
+      getShows();
     } catch (error) {
       console.error("Error fetching artist:", error);
       setError("Failed to fetch artist");
@@ -96,7 +97,7 @@ const useShows = (): UseShowsReturn => {
       console.log("Deleting show with ID:", showId);
       await deleteShow({ showId, artistId });
       console.log("Show deleted successfully");
-      getShows(artistId);
+      getShows();
     } catch (error) {
       console.error("Error deleting show:", error);
       setError("Failed to delete show");
@@ -116,7 +117,16 @@ const useShows = (): UseShowsReturn => {
     setShows((prevShows) => [...prevShows, show]);
   };
 
-  return { shows, addShow, removeShow, user, artist, isLoading, error };
+  return {
+    shows,
+    getShows,
+    addShow,
+    removeShow,
+    user,
+    artist,
+    isLoading,
+    error,
+  };
 };
 
 export default useShows;

@@ -13,6 +13,7 @@ import useShows from "@/hooks/useShows";
 import "@/styles/calendar-form.css";
 
 import { Show, Artist, Venue } from "@/lib/schema";
+import { getShowsByArtistId } from "@/lib/gcp/shows";
 
 export interface VenueCategory {
   icon: { prefix: string; suffix: string };
@@ -63,8 +64,16 @@ const init = {
 };
 
 export const CalForm = () => {
-  const { shows, addShow, removeShow, user, artist, isLoading, error } =
-    useShows();
+  const {
+    shows,
+    getShows,
+    addShow,
+    removeShow,
+    user,
+    artist,
+    isLoading,
+    error,
+  } = useShows();
   const { isAuthenticated } = useAuth();
   console.log("🚀 ~ CalForm ~ isAuthenticated:", isAuthenticated);
   const router = useRouter();
@@ -167,9 +176,9 @@ export const CalForm = () => {
               scheduledStart: form.scheduledStart,
               scheduledStop: form.scheduledStop,
             };
-            // setShows([...shows, newShow]);
             setForm({});
             setVenueInput("");
+            getShows();
           } else {
             alert(`Error: ${data.error}`);
           }
