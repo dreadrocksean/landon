@@ -1,4 +1,11 @@
-export const navigationLinks = [
+export interface NavigationLink {
+  id: number;
+  title: string;
+  route: string;
+  auth?: boolean;
+}
+
+export const navigationLinks: NavigationLink[] = [
   { id: 1, title: "Home", route: "/" },
   { id: 2, title: "about", route: "/#featured_music" },
   // { id: 3, title: "albums", route: "/#albums" },
