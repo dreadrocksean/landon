@@ -1,17 +1,27 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 
-export const pageLinks = [{ label: "about", href: "/about" }];
-export const homeLinks = [
+export interface FlyoutLinkItem {
+  label: string;
+  href: string;
+}
+
+export const pageLinks: FlyoutLinkItem[] = [{ label: "about", href: "/about" }];
+export const homeLinks: FlyoutLinkItem[] = [
   { label: "home", href: "/" },
   // { label: "home 2", href: "/home-2" },
   // { label: "home 3", href: "/home-3" },
   // { label: "home 4", href: "/home-4" },
 ];
 
-const FlyoutLink = ({ children, links }) => {
+interface FlyoutLinkProps {
+  children: ReactNode;
+  links: FlyoutLinkItem[];
+}
+
+const FlyoutLink: React.FC<FlyoutLinkProps> = ({ children, links }) => {
   const [open, setOpen] = useState(false);
 
   const showFlyout = open;

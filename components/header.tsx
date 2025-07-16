@@ -16,9 +16,14 @@ import MobileMenu from "./mobile-menu";
 import FlyoutLink, { homeLinks } from "./Dropdown/FlyoutLink";
 import "@/styles/header.css";
 
-//method call
-const Header = () => {
-  // Custom hooks for get scroll position
+type NavigationLink = {
+  id: string | number;
+  title: string;
+  route: string;
+  auth?: boolean;
+};
+
+const Header: React.FC = () => {
   const scrollPosition = useScroll();
   const isScroll = scrollPosition.y > 50;
   const { isAuthenticated } = useAuth();
@@ -51,7 +56,7 @@ const Header = () => {
           </FlyoutLink>
         </li> */}
 
-        {navigationLinks.map(
+        {(navigationLinks as NavigationLink[]).map(
           (link) =>
             (typeof link.auth === "undefined" ||
               (!link.auth && !isAuthenticated) ||

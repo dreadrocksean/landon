@@ -1,9 +1,9 @@
-// Main container wrapper 1170px d31448
+import React from "react";
 import Container from "./container";
 import Image from "next/image";
 import "@/styles/hero.css";
 
-const Hero = () => (
+const Hero: React.FC = () => (
   <section className="min-h-screen relative isolate bg-hero bg-cover bg-no-repeat py-10">
     <div className="bg-hero-text z-10 absolute inset-0 md:top-1/4 left-[10%] right-[10%] bg-center bg-contain bg-no-repeat"></div>
 

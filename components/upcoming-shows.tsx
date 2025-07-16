@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Container from "./container";
 import SectionHeading from "./section-heading";
-// Mock data for upcoming shows
 import useShows from "@/hooks/useShows";
 import Image from "next/image";
 import { useLayout } from "@/app/LayoutProvider";
@@ -12,7 +11,36 @@ import { twMerge } from "tailwind-merge";
 
 import "@/styles/shows.css";
 
-const parseDate = (date) => ({
+type Show = {
+  id: string | number;
+  scheduledStart: { toDate: () => Date };
+  scheduledStop: { toDate: () => Date };
+  status?: string;
+  venue: string;
+  showTitle?: string;
+  title?: string;
+  image?: string;
+  duration?: number;
+};
+
+type Schedule = {
+  start: {
+    day: number;
+    hr: string;
+    month: string;
+    week: string;
+    min: string;
+  };
+  end: {
+    day: number;
+    hr: string;
+    month: string;
+    week: string;
+    min: string;
+  };
+};
+
+const parseDate = (date: Date) => ({
   day: date.getDate(),
   hr: date.toLocaleString("default", { timeStyle: "short" }),
   month: date.toLocaleString("default", { month: "short" }),
@@ -20,7 +48,13 @@ const parseDate = (date) => ({
   min: date.toLocaleString("default", { minute: "numeric" }),
 });
 
-const getScheduleFromTimestamps = ({ start, stop }) => {
+const getScheduleFromTimestamps = ({
+  start,
+  stop,
+}: {
+  start: { toDate: () => Date };
+  stop: { toDate: () => Date };
+}): Schedule => {
   const startDate = start.toDate();
   const endDate = stop.toDate();
   return {
@@ -29,7 +63,10 @@ const getScheduleFromTimestamps = ({ start, stop }) => {
   };
 };
 
-const getSchedule = (date, duration) => {
+const getSchedule = (
+  date: string | number | Date,
+  duration: number
+): Schedule => {
   const start = new Date(date);
   const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
 
@@ -39,10 +76,9 @@ const getSchedule = (date, duration) => {
   };
 };
 
-//method call
 const UpcomingShows = () => {
   const { isRTL } = useLayout();
-  const { shows, isLoading, error } = useShows();
+  const { shows }: { shows: Show[] } = useShows();
 
   return (
     <div id="shows" className="bg-bg-dark">
@@ -52,7 +88,6 @@ const UpcomingShows = () => {
         </SectionHeading>
         <div className="flex divide-y divide-light-dark flex-col">
           {shows.map((show) => {
-            // const schedule = getSchedule(show.scheduledStart, show.duration);
             const schedule = getScheduleFromTimestamps({
               start: show.scheduledStart,
               stop: show.scheduledStop,
@@ -92,13 +127,13 @@ const UpcomingShows = () => {
                         : "transition-all duration-300 ease-linear group-hover:text-rose"
                     }  text-center md:text-start md:line-clamp-1`}
                   >
-                    {show.title}
+                    {show.showTitle ?? show.title ?? ""}
                   </h4>
                 </div>
 
                 {!cancelled && (
                   <Image
-                    src={show.image}
+                    src={show.image ?? "/img/home/placeholder.png"}
                     className={twMerge(
                       "absolute  scale-0 group-hover:scale-100 left-1/3  duration-500 transition-all top-5 md:top-[-40px] rotate-0  w-[13rem] h-[17rem] object-cover",
                       isRTL
@@ -107,7 +142,7 @@ const UpcomingShows = () => {
                     )}
                     width={220}
                     height={195}
-                    alt={show.title}
+                    alt={show.showTitle ?? show.title ?? "Show Image"}
                   />
                 )}
                 {cancelled ? (

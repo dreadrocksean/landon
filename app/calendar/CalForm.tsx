@@ -12,42 +12,12 @@ import useShows from "@/hooks/useShows";
 
 import "@/styles/calendar-form.css";
 
-export interface GeneralDBDocument {
-  id: number;
-  created_at: Timestamp;
-  updated_at?: string;
-}
-
-type Show = {
-  id: number;
-  title: string;
-  scheduledStart: string;
-  scheduledStop: string;
-};
+import { Show, Artist, Venue } from "@/lib/schema";
 
 export interface VenueCategory {
   icon: { prefix: string; suffix: string };
   id: number;
   name: string;
-}
-
-export interface Venue extends GeneralDBDocument {
-  categories: VenueCategory[];
-  fsq_id: string;
-  name: string;
-  distance: number;
-  geocodes: {
-    main: { latitude: number; longitude: number };
-  };
-  location: {
-    address: string;
-    formatted_address: string;
-    locality: string;
-    region: string;
-    country: string;
-    postcode: string;
-  };
-  timezone: string;
 }
 
 const foursquare = {

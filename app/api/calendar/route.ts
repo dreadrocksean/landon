@@ -5,24 +5,47 @@ import { createShow } from "@/lib/gcp/shows";
 import { createVenue } from "@/lib/gcp/venues";
 import "@/lib/gcp/admin"; // initialize admin SDK
 
+import { Show } from "@/lib/schema";
+
 const db = getFirestore();
 
+interface CreateShowBody {
+  title: string;
+  scheduledStart: string;
+  scheduledStop: string;
+  venue: any;
+  artistId: string;
+}
+
+interface DeleteShowBody {
+  id: string;
+}
+
 // GET: fetch all shows
-export const GET = async (req: NextRequest) => {
+export const GET = async (req: NextRequest): Promise<NextResponse> => {
   try {
     const showsRef = db.collection("shows");
     const query = showsRef.orderBy("scheduledStart", "desc");
     const snapshot = await query.get();
 
-    const shows = snapshot.docs.map((doc) => {
+    const shows: Show[] = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
-        title: data.title,
+        showTitle: data.title,
         scheduledStart: data.scheduledStart.toDate(),
         scheduledStop: data.scheduledStop.toDate(),
         venueId: data.venueId,
-        // Add other fields as needed
+        venue: data.venue,
+        date: data.date ? data.date.toDate() : data.scheduledStart.toDate(),
+        duration:
+          data.duration ??
+          (data.scheduledStop && data.scheduledStart
+            ? (data.scheduledStop.toDate().getTime() -
+                data.scheduledStart.toDate().getTime()) /
+              1000
+            : null),
+        createdAt: data.createdAt ? data.createdAt.toDate() : null,
       };
     });
 
@@ -37,21 +60,9 @@ export const GET = async (req: NextRequest) => {
 };
 
 // POST: create a new show
-export const POST = async (req: NextRequest) => {
+export const POST = async (req: NextRequest): Promise<NextResponse> => {
   try {
-    /* const authHeader = req.headers.get("authorization");
-    const token = authHeader?.startsWith("Bearer ")
-      ? authHeader.split("Bearer ")[1]
-      : null;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const decodedToken = await getAuth().verifyIdToken(token);
-    const uid = decodedToken.uid; */
-
-    const data = await req.json();
+    const data: CreateShowBody = await req.json();
     const { title, scheduledStart, scheduledStop, venue, artistId } = data;
 
     if (!title || !scheduledStart || !scheduledStop || !venue || !artistId) {
@@ -60,9 +71,6 @@ export const POST = async (req: NextRequest) => {
         { status: 400 }
       );
     }
-
-    // const venueRef = await createVenue(venue);
-    // console.log("🚀 ~ POST ~ venueRef id:", venueRef.id);
 
     const newShowId = await createShow(data);
     console.log("🚀 ~ POST ~ newShowId:", newShowId);
@@ -83,7 +91,7 @@ export const POST = async (req: NextRequest) => {
 };
 
 // DELETE: delete a show by ID
-export const DELETE = async (req: NextRequest) => {
+export const DELETE = async (req: NextRequest): Promise<NextResponse> => {
   try {
     const authHeader = req.headers.get("authorization");
     const token = authHeader?.startsWith("Bearer ")
@@ -96,7 +104,7 @@ export const DELETE = async (req: NextRequest) => {
 
     await getAuth().verifyIdToken(token);
 
-    const { id } = await req.json();
+    const { id }: DeleteShowBody = await req.json();
 
     if (!id) {
       return NextResponse.json({ error: "Missing show ID" }, { status: 400 });

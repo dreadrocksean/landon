@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
-//using hook from react 
-const useScroll = () => {
-  const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
+
+type ScrollPosition = {
+  x: number;
+  y: number;
+};
+
+const useScroll = (): ScrollPosition => {
+  const [scrollPosition, setScrollPosition] = useState<ScrollPosition>({
+    x: 0,
+    y: 0,
+  });
 
   useEffect(() => {
     const handleScroll = () => {

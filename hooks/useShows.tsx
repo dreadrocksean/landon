@@ -1,20 +1,29 @@
 import { useState, useEffect } from "react";
 import { user as userData } from "@/data/data";
-// Update this import to match the actual export from "@/lib/gcp/artists"
 import { getArtistByUserId } from "@/lib/gcp/artists";
 import { getUserByEmail } from "@/lib/gcp/users";
-import { getShowsByArtistId, deleteShow } from "@/lib/gcp/shows"; // Update this import to match the actual export
+import { getShowsByArtistId, deleteShow } from "@/lib/gcp/shows";
 import { User, Artist, Show } from "@/lib/schema";
 import useAuth from "./useAuth";
 
-const useShows = () => {
+type UseShowsReturn = {
+  shows: Show[];
+  addShow: (show: Show) => void;
+  removeShow: (params: { showId: string; artistId: string }) => Promise<void>;
+  user: User | null;
+  artist: Artist | null;
+  isLoading: boolean;
+  error: string | null;
+};
+
+const useShows = (): UseShowsReturn => {
   const [user, setUser] = useState<User | null>(null);
   const [artist, setArtist] = useState<Artist | null>(null);
   const [shows, setShows] = useState<Show[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getShows = async (artistId?: string) => {
+  const getShows = async (artistId?: string): Promise<void> => {
     try {
       if (!artistId) {
         setShows([]);
@@ -36,7 +45,7 @@ const useShows = () => {
     }
   };
 
-  const getArtist = async ({ userId }: { userId?: string }) => {
+  const getArtist = async ({ userId }: { userId?: string }): Promise<void> => {
     try {
       if (!userId) {
         setArtist(null);
@@ -55,7 +64,7 @@ const useShows = () => {
     }
   };
 
-  const getUser = async (email: string) => {
+  const getUser = async (email: string): Promise<void> => {
     try {
       if (!email) {
         setUser(null);
@@ -80,7 +89,7 @@ const useShows = () => {
   }: {
     showId: string;
     artistId: string;
-  }) => {
+  }): Promise<void> => {
     try {
       setIsLoading(true);
       setError(null);
@@ -97,16 +106,13 @@ const useShows = () => {
   };
 
   useEffect(() => {
-    // This effect could be used to fetch shows from an API or perform other side effects
-    // For now, it just logs the current shows
     setIsLoading(true);
     setError(null);
     console.log("Fetching shows...");
-
     getUser(userData.email);
   }, [userData?.email]);
 
-  const addShow = (show: Show) => {
+  const addShow = (show: Show): void => {
     setShows((prevShows) => [...prevShows, show]);
   };
 

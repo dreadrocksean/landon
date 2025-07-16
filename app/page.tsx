@@ -9,8 +9,9 @@ import FeaturedGrid from "@/components/featured-grid";
 // import Testimonials from "@/components/testimonials";
 // import LatestBlogs from "@/components/latest-blogs";
 import Footer from "@/components/footer";
+import type { FC } from "react";
 
-export const Home = () => (
+export const Home: FC = () => (
   <main className="bg-bg-dark text-white text-base">
     <Header />
     <Hero />

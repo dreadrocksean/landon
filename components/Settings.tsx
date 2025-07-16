@@ -6,9 +6,9 @@ import { CiTextAlignLeft, CiTextAlignRight } from "react-icons/ci";
 import { twMerge } from "tailwind-merge";
 import { useLayout } from "@/app/LayoutProvider";
 
-const Settings = () => {
-  const [active, setActive] = useState(false);
-  const toggle = () => setActive((prev) => !prev);
+const Settings: React.FC = () => {
+  const [active, setActive] = useState<boolean>(false);
+  const toggle = (): void => setActive((prev) => !prev);
   const { setIsRTL } = useLayout();
   return (
     <div dir="ltr" className="z-40  fixed top-1/2 right-0 ">
@@ -34,12 +34,12 @@ const Settings = () => {
           <div className="flex items-center pt-2 text-4xl gap-2">
             <CiTextAlignLeft
               title="left to right"
-              onClick={() => setIsRTL(false)}
+              onClick={(): void => setIsRTL(false)}
               className="bg-white cursor-pointer  size-8 rounded"
             />
             <CiTextAlignRight
               title="right to left"
-              onClick={() => setIsRTL(true)}
+              onClick={(): void => setIsRTL(true)}
               className="bg-white cursor-pointer  size-8 rounded"
             />
           </div>

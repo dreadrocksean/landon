@@ -1,6 +1,7 @@
 import Image from "next/image";
-//method call
-const FeaturedGrid = () => (
+import type { FC } from "react";
+
+const FeaturedGrid: FC = () => (
   <section
     id="gallery"
     className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
@@ -61,4 +62,5 @@ const FeaturedGrid = () => (
     </div>
   </section>
 );
+
 export default FeaturedGrid;

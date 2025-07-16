@@ -8,9 +8,10 @@ import {
   FaPinterestP,
 } from "react-icons/fa6";
 import SocialIcon from "./icon";
+import { ReactNode, AnchorHTMLAttributes } from "react";
 
 //method call
-const Footer = () => {
+const Footer: React.FC = () => {
   return (
     <div className="relative bg-footer bg-cover bg-no-repeat">
       <div className="absolute z-10 inset-0 bg-bg-overly bg-opacity-85"></div>
@@ -119,7 +120,16 @@ const Footer = () => {
 };
 
 // Footer Item Link Component
-const FooterLink = ({ children, href = "/", ...props }) => {
+type FooterLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
+  children: ReactNode;
+  href?: string;
+};
+
+const FooterLink: React.FC<FooterLinkProps> = ({
+  children,
+  href = "/",
+  ...props
+}) => {
   return (
     <Link
       {...props}

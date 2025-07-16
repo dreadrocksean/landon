@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, momentLocalizer } from "react-big-calendar";
+import {
+  Calendar,
+  momentLocalizer,
+  SlotInfo,
+  Event as RBCEvent,
+} from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
@@ -9,11 +14,21 @@ import ShowModal from "./ShowModal";
 
 const localizer = momentLocalizer(moment);
 
-export default function CalendarPage() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState(null);
+export interface ShowEvent {
+  id?: string;
+  title?: string;
+  start: Date;
+  end: Date;
+  [key: string]: any;
+}
 
-  const handleSelectSlot = (slotInfo) => {
+export default function CalendarPage() {
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [selectedSlot, setSelectedSlot] = useState<SlotInfo | ShowEvent | null>(
+    null
+  );
+
+  const handleSelectSlot = (slotInfo: SlotInfo) => {
     setSelectedSlot(slotInfo);
     setModalOpen(true);
   };
@@ -28,8 +43,8 @@ export default function CalendarPage() {
         endAccessor="end"
         style={{ height: "80vh" }}
         onSelectSlot={handleSelectSlot}
-        onSelectEvent={(event) => {
-          setSelectedSlot(event);
+        onSelectEvent={(event: RBCEvent) => {
+          setSelectedSlot(event as ShowEvent);
           setModalOpen(true);
         }}
       />
@@ -38,10 +53,10 @@ export default function CalendarPage() {
         isOpen={modalOpen}
         initialData={selectedSlot}
         onClose={() => setModalOpen(false)}
-        onSave={(newShow) => {
+        onSave={(newShow: ShowEvent) => {
           // Handle Firestore add/update
         }}
-        onDelete={(showId) => {
+        onDelete={(showId: string) => {
           // Handle Firestore delete
         }}
       />

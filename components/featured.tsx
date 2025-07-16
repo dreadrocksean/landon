@@ -13,43 +13,42 @@ const LazyReactPlayer = dynamic(() => import("react-player"), {
   ssr: false,
 });
 
-//method call
-const Featured = () => {
-  const [showMore, setShowMore] = useState(false);
+interface FeatureData {
+  heading: string;
+  about: string;
+}
 
-  const videoUrl =
+const Featured: React.FC = () => {
+  const [showMore, setShowMore] = useState<boolean>(false);
+
+  const videoUrl: string =
     "https://www.youtube.com/embed/6a6TYM3-0EA?si=F2TY-Wcs69c587I6";
-  const [play, setPlay] = useState(false);
+  const [play, setPlay] = useState<boolean>(false);
 
-  const toggleMore = () => {
+  const toggleMore = (): void => {
     setShowMore(!showMore);
   };
 
-  const renderShowMore = () =>
+  const renderShowMore = (): JSX.Element =>
     !showMore ? (
       <div onClick={toggleMore} className="cursor-pointer">
-        <div
-          className="font-medium text-rose hover:text-white duration-300 transition-all ease-linear"
-          href="#"
-        >
+        <div className="font-medium text-rose hover:text-white duration-300 transition-all ease-linear">
           MORE ABOUT LANDON &gt;
         </div>
       </div>
     ) : (
       <div onClick={toggleMore} className="cursor-pointer">
-        <div
-          className="font-medium text-rose hover:text-white duration-300 transition-all ease-linear"
-          href="#"
-        >
+        <div className="font-medium text-rose hover:text-white duration-300 transition-all ease-linear">
           LESS ABOUT LANDON &gt;
         </div>
       </div>
     );
 
-  const heading = feature.heading;
-  const words = heading.split(" ");
-  const ln1 = words?.slice(0, words.length / 2).join(" ");
-  const ln2 = words?.slice(words.length / 2).join(" ");
+  const featureData: FeatureData = feature;
+  const heading: string = featureData.heading;
+  const words: string[] = heading.split(" ");
+  const ln1: string = words?.slice(0, words.length / 2).join(" ");
+  const ln2: string = words?.slice(words.length / 2).join(" ");
 
   return (
     <section
@@ -62,7 +61,7 @@ const Featured = () => {
           <div data-aos="fade-up" className="flex-1 text-center lg:text-start ">
             <h2>{heading}</h2>
             <p className="more text-cyan mx-auto lg:mx-0 mt-10 mb-12 max-w-[533px]">
-              {feature.about}
+              {featureData.about}
             </p>
             {renderShowMore()}
           </div>
@@ -100,7 +99,7 @@ const Featured = () => {
         {showMore && (
           <div
             data-aos="fade-up"
-            class="more relative z-20 lg:items-center px-container"
+            className="more relative z-20 lg:items-center px-container"
           >
             <MoreFeatured />
             {renderShowMore()}
@@ -110,4 +109,5 @@ const Featured = () => {
     </section>
   );
 };
+
 export default Featured;

@@ -1,6 +1,12 @@
 import { twMerge } from "tailwind-merge";
-//method call 
-const Icon = ({ Icon, className, ...props }) => {
+import { ComponentType, HTMLAttributes } from "react";
+
+interface IconProps extends HTMLAttributes<HTMLDivElement> {
+  Icon: ComponentType;
+  className?: string;
+}
+
+const Icon: React.FC<IconProps> = ({ Icon, className, ...props }) => {
   return (
     <div
       {...props}
@@ -13,4 +19,5 @@ const Icon = ({ Icon, className, ...props }) => {
     </div>
   );
 };
+
 export default Icon;

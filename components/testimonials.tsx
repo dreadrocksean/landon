@@ -6,18 +6,21 @@ import SectionHeading from "./section-heading";
 import Image from "next/image";
 import "../styles/testimonials.css";
 import { twMerge } from "tailwind-merge";
-import useEmblaCarousel from "embla-carousel-react";
+import useEmblaCarousel, { UseEmblaCarouselType } from "embla-carousel-react";
 import useEmblaDotButton from "@/hooks/useEmblaDotButton";
-
-// This function used for implementing autoplay
 import Autoplay from "embla-carousel-autoplay";
 import { useLayout } from "@/app/LayoutProvider";
 
-//method call
-const Testimonials = () => {
+type Testimonial = {
+  id: string | number;
+  image: string;
+  quote: string;
+  signature: string;
+};
+
+const Testimonials: React.FC = () => {
   const { isRTL } = useLayout();
 
-  // This hook part of embla-carousel-react
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
       dragFree: true,
@@ -25,8 +28,10 @@ const Testimonials = () => {
     },
     [Autoplay()]
   );
-  // This custom hook use for showing carousel dots
-  const { selectedIndex, onDotButtonClick } = useEmblaDotButton(emblaApi);
+
+  const { selectedIndex, onDotButtonClick } = useEmblaDotButton(
+    emblaApi as UseEmblaCarouselType | undefined
+  );
 
   return (
     <div dir="ltr" className="bg-bg-dark">
@@ -36,7 +41,7 @@ const Testimonials = () => {
         </SectionHeading>
         <div className="embla_testimonial px-container" ref={emblaRef}>
           <div className="flex gap-4 embla__container_testimonial">
-            {testimonials.map((testimonial) => (
+            {testimonials.map((testimonial: Testimonial) => (
               <div
                 dir={isRTL ? "rtl" : "ltr"}
                 key={testimonial.id}
@@ -73,7 +78,7 @@ const Testimonials = () => {
           </div>
         </div>
         <div className="flex gap-4 mt-5 sm:mt-1 justify-center sm:justify-end">
-          {testimonials.map((item, index) => (
+          {testimonials.map((item: Testimonial, index: number) => (
             <button
               key={index}
               onClick={() => onDotButtonClick(index)}

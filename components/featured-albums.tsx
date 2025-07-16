@@ -20,10 +20,25 @@ import AudioPlayer from "react-h5-audio-player";
 import "react-h5-audio-player/lib/styles.css";
 import "@/styles/featuredalbums.css";
 
-//method call
-const FeaturedAlbums = () => {
+// Types
+type SocialLinks = {
+  facebook: string;
+  twitter: string;
+  instagram: string;
+  pinterest: string;
+};
+
+type Music = {
+  id: string | number;
+  title: string;
+  duration: string;
+  src: string;
+  socialLinks: SocialLinks;
+};
+
+const FeaturedAlbums: React.FC = () => {
   // get current music for here
-  const [currentMusic, setCurrentMusic] = useState(musicArray[0]);
+  const [currentMusic, setCurrentMusic] = useState<Music>(musicArray[0]);
 
   return (
     <section className="relative py-section isolate bg-albums bg-cover bg-no-repeat">
@@ -37,7 +52,7 @@ const FeaturedAlbums = () => {
               <h3 className="text-4xl font-bold">Featured Albums</h3>
             </header>
             <div className="flex flex-col gap-2">
-              {musicArray.map((music) => (
+              {musicArray.map((music: Music) => (
                 <div
                   onClick={() => setCurrentMusic(music)}
                   key={music.id}
@@ -72,21 +87,21 @@ const FeaturedAlbums = () => {
                         )}
                       >
                         <Link href={music.socialLinks.facebook}>
-                          <SocialIcon Icon={FaFacebookF} />
+                          <SocialIcon Icon={FaFacebookF} className="" />
                         </Link>
                         <Link href={music.socialLinks.twitter}>
-                          <SocialIcon Icon={FaTwitter} />
+                          <SocialIcon Icon={FaTwitter} className="" />
                         </Link>
                         <Link href={music.socialLinks.instagram}>
-                          <SocialIcon Icon={FaInstagram} />
+                          <SocialIcon Icon={FaInstagram} className="" />
                         </Link>
                         <Link href={music.socialLinks.pinterest}>
-                          <SocialIcon Icon={FaPinterestP} />
+                          <SocialIcon Icon={FaPinterestP} className="" />
                         </Link>
                       </div>
                     </div>
                     <span className="text-md font-bold text-rose">
-                      {music.duration}
+                      {music.duration}q
                     </span>
                   </div>
                 </div>
@@ -96,7 +111,7 @@ const FeaturedAlbums = () => {
               <AudioPlayer
                 autoPlay={false}
                 src={currentMusic.src}
-                onPlay={(e) => console.log("onPlay")}
+                onPlay={(e: Event) => console.log("onPlay")}
               />
             </div>
           </div>

@@ -26,12 +26,12 @@ export interface BaseShow {
   scheduledStart: Timestamp; // Start time of the show
   scheduledStop: Timestamp; // End time of the show
   showTitle?: string;
+  showStatus?: "free" | "cancelled" | "confirmed";
 }
 
 export interface FirestoreShow extends BaseShow {
   venueId?: string; // Reference to the venue
   venueRef?: DocumentReference; // Reference to the venue document
-  showStatus?: "free" | "cancelled" | "confirmed";
   doorFee?: number; // in USD
   artistFee?: number; // in USD
   totalTips?: number; // Total tips received for the show

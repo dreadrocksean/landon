@@ -4,17 +4,24 @@ import { FaArrowRight } from "react-icons/fa6";
 import Image from "next/image";
 import { latestBlogPosts } from "@/data/data";
 
-//method call 
-const LatestBlogs = () => {
+type Blog = {
+  id: string | number;
+  image: string;
+  title: string;
+  publishAt: string;
+  category: string;
+};
+
+const LatestBlogs: React.FC = () => {
   return (
     <div id="blog" className="bg-bg-dark">
       <Container className="py-section">
-        <SectionHeading>
+        <SectionHeading className="">
           <h2 className="uppercase text-center">READ OUR LATEST BLOG</h2>
         </SectionHeading>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
-          {latestBlogPosts.map((blog) => (
+          {latestBlogPosts.map((blog: Blog) => (
             <BlogCard key={blog.id} blog={blog} />
           ))}
         </div>
@@ -23,7 +30,11 @@ const LatestBlogs = () => {
   );
 };
 
-const BlogCard = ({ blog }) => {
+type BlogCardProps = {
+  blog: Blog;
+};
+
+const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
   return (
     <article
       data-aos="zoom-in-up"

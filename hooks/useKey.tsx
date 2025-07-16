@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-//using hook from react 
-const useKey = (key, callback) => {
+
+const useKey = (key: string, callback: () => void): void => {
   useEffect(() => {
-    const handleKey = (event) => {
+    const handleKey = (event: KeyboardEvent) => {
       if (event.key === key) {
         callback();
       }
@@ -15,4 +15,5 @@ const useKey = (key, callback) => {
     };
   }, [key, callback]);
 };
+
 export default useKey;

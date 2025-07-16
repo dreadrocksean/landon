@@ -1,12 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { FC } from "react";
 import CalForm from "./CalForm";
 import Header from "@/components/header";
 import Hero from "@/components/hero";
 import Footer from "@/components/footer";
 
-const Calendar = () => (
+const Calendar: FC = () => (
   <main className="bg-bg-dark text-white text-base">
     <Header />
     <Hero basic={true} />

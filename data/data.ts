@@ -1,10 +1,21 @@
 //play list
+import { Show } from "@/lib/schema";
 
-export const user = {
+export interface User {
+  email: string;
+}
+
+export const user: User = {
   email: "landonsean2012@gmail.com",
 };
 
-export const feature = {
+export interface Feature {
+  heading: string;
+  about: string;
+  more: string[];
+}
+
+export const feature: Feature = {
   heading: "DISCOVER KANSAS CITY'S NEWEST PHENOMENON",
   about:
     "Just 13 years old, Landon Bartholomew electrifies audiences everywhere he performs. He's not awesome &apos;for his age&apos;. He's simply awesome! Performing professionally since he was 10, his confidence and audience participation defies his years. He's a cutie too!",
@@ -64,181 +75,207 @@ export const feature = {
   ],
 };
 
-export const shows = [
+export const shows: Show[] = [
   {
     id: 1,
     venue: "Murphy's Corner",
-    title: "St. Pattie's Morning Show",
-    image: "/img/landon/15.jpg",
-    status: "free",
-    date: "2025-03-17T10:00:00-05:00",
+    showTitle: "St. Pattie's Morning Show",
+    //image: "/img/landon/15.jpg",
+    showStatus: "free",
+    date: new Date("2025-03-17T10:00:00-05:00"),
     duration: 3,
   },
   {
     id: 2,
     venue: "Jerry's Bait Shop",
-    title: "Jerry's Pre Jam",
-    image: "/img/landon/8.jpg",
-    status: "cancelled",
-    date: "2025-03-19T18:30:00-05:00",
+    showTitle: "Jerry's Pre Jam",
+    //image: "/img/landon/8.jpg",
+    showStatus: "cancelled",
+    date: new Date("2025-03-19T18:30:00-05:00"),
     duration: 1,
   },
   {
     id: 3,
     venue: "Jerry's Bait Shop",
-    title: "Pre Jam Show",
-    image: "/img/landon/9.jpg",
-    status: "free",
-    date: "2025-03-26T18:30:00-05:00",
+    showTitle: "Pre Jam Show",
+    //image: "/img/landon/9.jpg",
+    showStatus: "free",
+    date: new Date("2025-03-26T18:30:00-05:00"),
     duration: 1,
   },
   {
     id: 4,
     venue: "Murphy's Corner",
-    title: "Brunch with Landon",
-    image: "/img/landon/11.jpg",
-    status: "free",
-    date: "2025-03-30T11:00:00-05:00",
+    showTitle: "Brunch with Landon",
+    //image: "/img/landon/11.jpg",
+    showStatus: "free",
+    date: new Date("2025-03-30T11:00:00-05:00"),
     duration: 3,
   },
   {
     id: 5,
     venue: "Murphy's Corner",
-    title: "Sunday Funday",
-    image: "/img/landon/12.jpg",
-    status: "free",
-    date: "2025-03-30T18:00:00-05:00",
+    showTitle: "Sunday Funday",
+    //image: "/img/landon/12.jpg",
+    showStatus: "free",
+    date: new Date("2025-03-30T18:00:00-05:00"),
     duration: 3,
   },
   {
     id: 6,
     venue: "Murphy's Corner",
-    title: "Friday Night Live",
-    image: "/img/landon/13.jpg",
-    status: "free",
-    date: "2025-04-18T19:00:00-05:00",
+    showTitle: "Friday Night Live",
+    //image: "/img/landon/13.jpg",
+    showStatus: "free",
+    date: new Date("2025-04-18T19:00:00-05:00"),
     duration: 3,
   },
   {
     id: 7,
     venue: "Murphy's Corner",
-    title: "Brunch with Landon",
-    image: "/img/landon/14.jpg",
-    status: "free",
-    date: "2025-04-27T12:00:00-05:00",
+    showTitle: "Brunch with Landon",
+    //image: "/img/landon/14.jpg",
+    showStatus: "free",
+    date: new Date("2025-04-27T12:00:00-05:00"),
     duration: 3,
   },
   {
     id: 8,
     venue: "Jerry's Bait Shop",
-    title: "Pre Jam Show",
-    image: "/img/landon/9.jpg",
-    status: "free",
-    date: "2025-04-29T18:30:00-05:00",
+    showTitle: "Pre Jam Show",
+    //image: "/img/landon/9.jpg",
+    showStatus: "free",
+    date: new Date("2025-04-29T18:30:00-05:00"),
     duration: 1,
   },
   {
     id: 9,
     venue: "Murphy's Corner",
-    title: "Mothers Day Brunch",
-    image: "/img/landon/15.jpg",
-    status: "cancelled",
-    date: "2025-05-15T11:30:00-05:00",
+    showTitle: "Mothers Day Brunch",
+    //image: "/img/landon/15.jpg",
+    showStatus: "cancelled",
+    date: new Date("2025-05-15T11:30:00-05:00"),
     duration: 3,
   },
   {
     id: 10,
     venue: "Murphy's Corner",
-    title: "Friday Night Live",
-    image: "/img/landon/15.jpg",
-    status: "free",
-    date: "2025-05-30T19:00:00-05:00",
+    showTitle: "Friday Night Live",
+    //image: "/img/landon/15.jpg",
+    showStatus: "free",
+    date: new Date("2025-05-30T19:00:00-05:00"),
     duration: 3,
   },
 ];
+
 //profile
-export const members = [
+export interface Member {
+  id: number;
+  name: string;
+  position: string;
+  //image: string;
+}
+
+export const members: Member[] = [
   {
     id: 1,
     name: "David Beckham",
     position: "CEO & Founder",
-    image: "/img/home/m1.jpg",
+    //image: "/img/home/m1.jpg",
   },
   {
     id: 2,
     name: "Jennifer Lopez",
     position: "CCO",
-    image: "/img/home/m2.jpg",
+    //image: "/img/home/m2.jpg",
   },
   {
     id: 3,
     name: "Elon Musk",
     position: "CTO",
-    image: "/img/home/m3.jpg",
+    //image: "/img/home/m3.jpg",
   },
   {
     id: 4,
     name: "Serena Williams",
     position: "COO",
-    image: "/img/home/m4.jpeg",
+    //image: "/img/home/m4.jpeg",
   },
   {
     id: 5,
     name: "Jeff Bezos",
     position: "CFO",
-    image: "/img/home/m5.jpg",
+    //image: "/img/home/m5.jpg",
   },
   {
     id: 6,
     name: "Oprah Winfrey",
     position: "CMO",
-    image: "/img/home/m6.jpeg",
+    //image: "/img/home/m6.jpeg",
   },
   {
     id: 7,
     name: "Warren Buffett",
     position: "CSO",
-    image: "/img/home/m7.jpg",
+    //image: "/img/home/m7.jpg",
   },
   {
     id: 8,
     name: "Adam Gats",
     position: "CLO",
-    image: "/img/home/m8.jpg",
+    //image: "/img/home/m8.jpg",
   },
 ];
+
 //blog
-export const latestBlogPosts = [
+export interface BlogPost {
+  id: number;
+  showTitle: string;
+  publishAt: string;
+  category: string;
+  //image: string;
+}
+
+export const latestBlogPosts: BlogPost[] = [
   {
     id: 1,
-    title: "10 Essential Development Tools Every Programmer Should Know",
+    showTitle: "10 Essential Development Tools Every Programmer Should Know",
     publishAt: "March 23, 2023",
     category: "Development",
-    image: "/img/home/p1.jpg",
+    //image: "/img/home/p1.jpg",
   },
   {
     id: 2,
-    title: "Introduction to Web Development: A Beginner's Guide",
+    showTitle: "Introduction to Web Development: A Beginner's Guide",
     publishAt: "March 23, 2023",
     category: "Development",
-    image: "/img/home/p2.jpg",
+    //image: "/img/home/p2.jpg",
   },
   {
     id: 3,
-    title: "Top 5 JavaScript Frameworks for Modern Web Development",
+    showTitle: "Top 5 JavaScript Frameworks for Modern Web Development",
     publishAt: "March 23, 2023",
     category: "Development",
-    image: "/img/home/p3.jpg",
+    //image: "/img/home/p3.jpg",
   },
 ];
+
 //testimonial
-export const testimonials = [
+export interface Testimonial {
+  id: number;
+  name: string;
+  quote: string;
+  //image: string;
+  signature: string;
+}
+
+export const testimonials: Testimonial[] = [
   {
     id: 1,
     name: "John Doe",
     quote:
       "If you need to redesign your new project, new visual strategy, ux structure or you do have some cool ideas for collaboration",
-    image: "/img/home/g2.jpg",
+    //image: "/img/home/g2.jpg",
     signature: "John",
   },
   {
@@ -246,7 +283,7 @@ export const testimonials = [
     name: "Jane Smith",
     quote:
       "If you need to redesign your new project, new visual strategy, ux structure or you do have some cool ideas for collaboration",
-    image: "/img/home/g1.jpg",
+    //image: "/img/home/g1.jpg",
     signature: "Jane",
   },
   {
@@ -254,15 +291,31 @@ export const testimonials = [
     name: "David Brown",
     quote:
       "If you need to redesign your new project, new visual strategy, ux structure or you do have some cool ideas for collaboration",
-    image: "/img/home/m8.jpg",
+    //image: "/img/home/m8.jpg",
     signature: "David",
   },
 ];
+
 //playlist
-export const musicArray = [
+export interface SocialLinks {
+  facebook: string;
+  twitter: string;
+  instagram: string;
+  pinterest: string;
+}
+
+export interface Music {
+  id: number;
+  showTitle: string;
+  src: string;
+  duration: string;
+  socialLinks: SocialLinks;
+}
+
+export const musicArray: Music[] = [
   {
     id: 1,
-    title: "Rate Diya Butake",
+    showTitle: "Rate Diya Butake",
     src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
     duration: "6:45",
     socialLinks: {
@@ -274,7 +327,7 @@ export const musicArray = [
   },
   {
     id: 2,
-    title: "Rate Diya Butake",
+    showTitle: "Rate Diya Butake",
     src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
     duration: "5:20",
     socialLinks: {
@@ -286,7 +339,7 @@ export const musicArray = [
   },
   {
     id: 3,
-    title: "Rate Diya Butake",
+    showTitle: "Rate Diya Butake",
     src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3",
     duration: "5:10",
     socialLinks: {
@@ -298,7 +351,7 @@ export const musicArray = [
   },
   {
     id: 4,
-    title: "Rate Diya Butake",
+    showTitle: "Rate Diya Butake",
     src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3",
     duration: "6:30",
     socialLinks: {
@@ -310,7 +363,7 @@ export const musicArray = [
   },
   {
     id: 5,
-    title: "Rate Diya Butake",
+    showTitle: "Rate Diya Butake",
     src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
     duration: "6:45",
     socialLinks: {
@@ -321,46 +374,53 @@ export const musicArray = [
     },
   },
 ];
+
 //music albums
-export const latestAlbums = [
+export interface Album {
+  id: number;
+  link: string;
+  //image: string;
+}
+
+export const latestAlbums: Album[] = [
   {
     id: 1,
     link: "",
-    image: "/img/home/la1.png",
+    //image: "/img/home/la1.png",
   },
   {
     id: 2,
     link: "",
-    image: "/img/home/la2.png",
+    //image: "/img/home/la2.png",
   },
   {
     id: 3,
     link: "",
-    image: "/img/home/la3.png",
+    //image: "/img/home/la3.png",
   },
   {
     id: 4,
     link: "",
-    image: "/img/home/la4.png",
+    //image: "/img/home/la4.png",
   },
   {
     id: 5,
     link: "",
-    image: "/img/home/la5.png",
+    //image: "/img/home/la5.png",
   },
   {
     id: 6,
     link: "",
-    image: "/img/home/la2.png",
+    //image: "/img/home/la2.png",
   },
   {
     id: 7,
     link: "",
-    image: "/img/home/la3.png",
+    //image: "/img/home/la3.png",
   },
   {
     id: 8,
     link: "",
-    image: "/img/home/la4.png",
+    //image: "/img/home/la4.png",
   },
 ];

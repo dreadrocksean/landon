@@ -21,7 +21,11 @@ export const metadata = {
     "Landon Music is a great Nextjs Template Music Web designed to accelerate his online presence",
 };
 
-export const RootLayout = ({ children }) => (
+interface RootLayoutProps {
+  children: React.ReactNode;
+}
+
+export const RootLayout: React.FC<RootLayoutProps> = ({ children }) => (
   <html lang="en">
     <body
       className={twMerge(

@@ -1,9 +1,13 @@
-// Main container wrapper 1170px d31448
+import React from "react";
 import Container from "./container";
 import Image from "next/image";
 import "@/styles/hero.css";
 
-const Hero = ({ basic = false }: { basic?: boolean }) => (
+interface HeroProps {
+  basic?: boolean;
+}
+
+const Hero: React.FC<HeroProps> = ({ basic = false }) => (
   <section
     className={`${
       !basic ? "min-h-screen " : "short-hero "

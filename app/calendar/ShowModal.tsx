@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -66,13 +66,17 @@ export const ShowModal: React.FC<ShowModalProps> = ({
           <Input
             placeholder="Show Title"
             value={form.title || ""}
-            onChange={(e) => handleChange("title", e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              handleChange("title", e.target.value)
+            }
           />
           <ReactDatePicker
             selected={
               form.scheduledStart ? new Date(form.scheduledStart) : null
             }
-            onChange={(date) => handleDateChange("scheduledStart", date)}
+            onChange={(date: Date | null) =>
+              handleDateChange("scheduledStart", date)
+            }
             showTimeSelect
             timeIntervals={15}
             dateFormat="Pp"
@@ -81,7 +85,9 @@ export const ShowModal: React.FC<ShowModalProps> = ({
           />
           <ReactDatePicker
             selected={form.scheduledStop ? new Date(form.scheduledStop) : null}
-            onChange={(date) => handleDateChange("scheduledStop", date)}
+            onChange={(date: Date | null) =>
+              handleDateChange("scheduledStop", date)
+            }
             showTimeSelect
             timeIntervals={15}
             dateFormat="Pp"

@@ -1,11 +1,14 @@
-// app/api/login/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "firebase-admin/auth";
 import "@/lib/gcp/admin"; // this initializes firebase-admin
 
-export const POST = async (req: NextRequest) => {
+type LoginRequestBody = {
+  token: string;
+};
+
+export const POST = async (req: NextRequest): Promise<NextResponse> => {
   try {
-    const { token } = await req.json();
+    const { token }: LoginRequestBody = await req.json();
 
     console.log("🚀 ~ POST ~ token:", token);
     if (!token) {
@@ -14,7 +17,7 @@ export const POST = async (req: NextRequest) => {
 
     const decodedToken = await getAuth().verifyIdToken(token);
     return NextResponse.json({ success: true, uid: decodedToken.uid });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("Login verification error:", err);
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }

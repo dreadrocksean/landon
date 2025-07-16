@@ -4,9 +4,10 @@ import Container from "./container";
 import SectionHeading from "./section-heading";
 import Image from "next/image";
 import { twMerge } from "tailwind-merge";
+import { ReactNode, HTMLAttributes } from "react";
 
-//method call 
-const NewestAlbums = () => {
+//method call
+const NewestAlbums: React.FC = () => {
   return (
     <section
       id="albums"
@@ -17,7 +18,10 @@ const NewestAlbums = () => {
           <h2 className="max-w-3xl">
             CHECK OUR NEWEST ALBUMS AND SINGLE PODCAST
           </h2>
-          <Link className="font-medium hover:text-white transition-all duration-300 ease-linear underline text-rose" href="/">
+          <Link
+            className="font-medium hover:text-white transition-all duration-300 ease-linear underline text-rose"
+            href="/"
+          >
             VIEW ALL RELEASES
           </Link>
         </SectionHeading>
@@ -127,24 +131,6 @@ const NewestAlbums = () => {
               />
             </AlbumWrapper>
             <AlbumWrapper
-              data-aos="zoom-in-up"
-              className="lg:basis-[255px] h-96 rounded overflow-hidden lg:h-[255px] "
-            >
-              <AlbumOverly>
-                <p className="text-sm capitalize line-clamp-1">Night show</p>
-                <h6 className="text-lg uppercase font-bold line-clamp-1">
-                  Hello MORING
-                </h6>
-              </AlbumOverly>
-              <Image
-                src={"/img/home/g6.jpg"}
-                fill
-                alt=""
-                className="w-full object-cover"
-              />
-            </AlbumWrapper>
-
-            <AlbumWrapper
               data-aos="zoom-in-down"
               className=" lg:basis-[290px] lg:-mt-48 h-96 lg:h-[290px]"
             >
@@ -168,7 +154,12 @@ const NewestAlbums = () => {
   );
 };
 //method call
-const AlbumOverly = ({ children, className }) => {
+type AlbumOverlyProps = {
+  children: ReactNode;
+  className?: string;
+};
+
+const AlbumOverly = ({ children, className }: AlbumOverlyProps) => {
   return (
     <div
       className={twMerge(
@@ -181,7 +172,12 @@ const AlbumOverly = ({ children, className }) => {
   );
 };
 //method call
-const AlbumWrapper = ({ children, className, ...props }) => {
+type AlbumWrapperProps = {
+  children: ReactNode;
+  className?: string;
+} & HTMLAttributes<HTMLElement>;
+
+const AlbumWrapper = ({ children, className, ...props }: AlbumWrapperProps) => {
   return (
     <article
       data-aos="zoom-in-right"

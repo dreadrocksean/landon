@@ -11,15 +11,21 @@ import useKey from "@/hooks/useKey";
 // Navigation links data
 import { navigationLinks } from "@/utils/constants";
 
-//method call
-const MobileMenu = () => {
+// Define the type for navigationLinks items
+type NavigationLink = {
+  id: string | number;
+  title: string;
+  route: string;
+  auth?: boolean;
+};
+
+const MobileMenu: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 
   const toggle = () => setIsMenuOpen(!isMenuOpen);
   const close = () => setIsMenuOpen(false);
 
-  // This will close the menu when use pres Escape key
   useKey("Escape", close);
 
   return (
@@ -50,7 +56,7 @@ const MobileMenu = () => {
               <div className="drawer bg-white ">
                 <div>
                   <ul className="flex pl-1 uppercase font-kumbhSans flex-col text-bg-overly gap-4 py-4 font-medium overflow-auto text-xl">
-                    {navigationLinks.map(
+                    {(navigationLinks as NavigationLink[]).map(
                       (item) =>
                         (typeof item.auth === "undefined" ||
                           (!item.auth && !isAuthenticated) ||

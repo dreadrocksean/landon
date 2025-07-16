@@ -1,6 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, momentLocalizer, Event } from "react-big-calendar";
+import {
+  Calendar,
+  momentLocalizer,
+  Event as RBCEvent,
+  SlotInfo,
+  View,
+} from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-datepicker/dist/react-datepicker.css";
@@ -8,43 +14,50 @@ import "react-datepicker/dist/react-datepicker.css";
 import useAuth from "@/hooks/useAuth";
 import useShows from "@/hooks/useShows";
 import ShowModal from "@/app/calendar/ShowModal";
+import { Show } from "@/lib/schema";
 
 const localizer = momentLocalizer(moment);
 
-const CalendarPage = () => {
+interface CalendarEvent extends RBCEvent {
+  id: string | number;
+  title: string;
+  start: Date;
+  end: Date;
+  [key: string]: any;
+}
+
+const CalendarPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
-  const { shows, fetchShows } = useShows();
+  const { shows } = useShows();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<any>(null);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
+    null
+  );
 
-  //   useEffect(() => {
-  //     if (!isAuthenticated) {
-  //       router.push("/login");
-  //     } else {
-  //       fetchShows();
-  //     }
-  //   }, [isAuthenticated]);
+  // useEffect(() => {
+  //   if (!isAuthenticated) {
+  //     router.push("/login");
+  //   } else {
+  //     fetchShows();
+  //   }
+  // }, [isAuthenticated]);
 
-  const events = useMemo(() => {
-    return shows.map((show: any) => ({
-      id: show.id,
-      title: show.title,
-      start: new Date(show.scheduledStart),
-      end: new Date(show.scheduledStop),
+  const events = useMemo<Show[]>(() => {
+    return shows.map((show: Show) => ({
       ...show,
     }));
   }, [shows]);
 
-  const handleSelectSlot = (slotInfo: any) => {
+  const handleSelectSlot = (slotInfo: SlotInfo) => {
     setSelectedSlot(slotInfo);
     setSelectedEvent(null);
     setModalOpen(true);
   };
 
-  const handleSelectEvent = (event: any) => {
+  const handleSelectEvent = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setSelectedSlot(null);
     setModalOpen(true);
@@ -62,13 +75,12 @@ const CalendarPage = () => {
         startAccessor="start"
         endAccessor="end"
         style={{ height: 600 }}
-        views={["month", "week", "day"]}
+        views={["month", "week", "day"] as View[]}
       />
 
       <ShowModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        slot={selectedSlot}
         event={selectedEvent}
       />
     </div>
