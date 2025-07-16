@@ -22,6 +22,7 @@ const Header = () => {
   const scrollPosition = useScroll();
   const isScroll = scrollPosition.y > 50;
   const { isAuthenticated } = useAuth();
+  console.log("🚀 ~ Header ~ isAuthenticated:", isAuthenticated);
 
   return (
     <nav

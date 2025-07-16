@@ -12,17 +12,19 @@ import {
   Query,
   query,
   DocumentReference,
+  addDoc,
 } from "firebase/firestore";
 import { Venue } from "@/lib/schema";
 
 const venuesRef = collection(db, "venues") as CollectionReference<Venue, Venue>;
 
-export const createVenue = async (venue: Venue): Promise<void> => {
-  await setDoc(doc(venuesRef, venue.id), {
+export const createVenue = async (
+  venue: Venue
+): Promise<DocumentReference<Venue, Venue>> =>
+  await addDoc<Venue, Venue>(venuesRef, {
     ...venue,
     createdAt: serverTimestamp(),
   });
-};
 
 export const getVenueById = async ({
   id,
@@ -45,7 +47,7 @@ export const getVenueByRef = async ({
   try {
     const snap = await getDoc(ref);
     if (snap.exists()) {
-      return Promise.resolve({ id: snap.id, ...snap.data() } as Venue);
+      return Promise.resolve({ ...snap.data(), id: snap.id });
     }
     return Promise.resolve(null);
   } catch (error) {

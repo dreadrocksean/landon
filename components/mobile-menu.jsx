@@ -5,12 +5,15 @@ import { RemoveScroll } from "react-remove-scroll";
 import FocusLock from "react-focus-lock";
 import "@/styles/mobilemenu.css";
 import { IoClose } from "react-icons/io5";
+
+import useAuth from "@/hooks/useAuth";
 import useKey from "@/hooks/useKey";
 // Navigation links data
 import { navigationLinks } from "@/utils/constants";
 
 //method call
 const MobileMenu = () => {
+  const { isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggle = () => setIsMenuOpen(!isMenuOpen);
@@ -47,13 +50,21 @@ const MobileMenu = () => {
               <div className="drawer bg-white ">
                 <div>
                   <ul className="flex pl-1 uppercase font-kumbhSans flex-col text-bg-overly gap-4 py-4 font-medium overflow-auto text-xl">
-                    {navigationLinks.map((item) => (
-                      <li onClick={close} key={item.id}>
-                        <Link className=" focus:text-rose" href={item.route}>
-                          {item.title}
-                        </Link>
-                      </li>
-                    ))}
+                    {navigationLinks.map(
+                      (item) =>
+                        (typeof item.auth === "undefined" ||
+                          (!item.auth && !isAuthenticated) ||
+                          (isAuthenticated && item.auth)) && (
+                          <li onClick={close} key={item.id}>
+                            <Link
+                              className=" focus:text-rose"
+                              href={item.route}
+                            >
+                              {item.title}
+                            </Link>
+                          </li>
+                        )
+                    )}
                   </ul>
                 </div>
                 <button

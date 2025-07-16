@@ -21,31 +21,46 @@ export interface Artist {
   isActive?: boolean; // Whether the artist is currently active
 }
 
-export interface FirestoreShow {
-  venueId: string; // Reference to the venue
-  venueRef?: DocumentReference; // Reference to the venue document
+export interface BaseShow {
+  createdAt: Timestamp; // Timestamp when the show was created
   scheduledStart: Timestamp; // Start time of the show
   scheduledStop: Timestamp; // End time of the show
-  createdAt: Timestamp; // Timestamp when the show was created
+  showTitle?: string;
 }
 
-export interface Show {
-  id: string;
-  artistId: string; // FK-like reference
-  createdAt: Timestamp;
-  date: Date;
-  venue: string;
-  duration: number; // in hours
-  title?: string;
-  image?: string;
-  status?: "free" | "cancelled" | "confirmed";
-  description?: string;
-  entranceFee?: number; // in USD
-  location?: Location; // e.g., city or address
+export interface FirestoreShow extends BaseShow {
+  venueId?: string; // Reference to the venue
+  venueRef?: DocumentReference; // Reference to the venue document
+  showStatus?: "free" | "cancelled" | "confirmed";
+  doorFee?: number; // in USD
+  artistFee?: number; // in USD
   totalTips?: number; // Total tips received for the show
 }
 
-export interface Location {
+export interface Show extends FirestoreShow {
+  id: string; // Document ID in Firestore
+  venue: string; // Name of the venue
+  date: Date; // Date of the show
+  duration: number; // Duration in hours
+  location?: string; // e.g., city or address
+}
+
+// export interface Show {
+//   id: string;
+//   artistId: string; // FK-like reference
+//   createdAt: Timestamp;
+//   date: Date;
+//   venue: string;
+//   duration: number; // in hours
+//   title?: string;
+//   status?: "free" | "cancelled" | "confirmed";
+//   description?: string;
+//   entranceFee?: number; // in USD
+//   location?: Location; // e.g., city or address
+//   totalTips?: number; // Total tips received for the show
+// }
+
+export interface Place {
   id: string;
   name: string;
   address: string;
@@ -58,6 +73,16 @@ export interface Location {
   website?: string; // Venue website
   capacity?: number; // Maximum capacity of the venue
   createdAt: Timestamp; // ISO date string for when the venue was created
+}
+export interface Location {
+  address: string;
+  census_block: string;
+  country: string;
+  dma: string;
+  formatted_address: string;
+  locality: string;
+  postcode: string;
+  region: string;
 }
 
 export interface Venue {

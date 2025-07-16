@@ -4,9 +4,10 @@ import { Timestamp } from "firebase/firestore";
 import React, { useState, useEffect, useCallback, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import ReactDatePicker from "react-datepicker";
-import useAuth from "@/hooks/useAuth";
 import "react-datepicker/dist/react-datepicker.css";
+import { getLocalISOString } from "@/utils/date";
 
+import useAuth from "@/hooks/useAuth";
 import useShows from "@/hooks/useShows";
 
 import "@/styles/calendar-form.css";
@@ -87,16 +88,15 @@ const init = {
   city: "Lenexa",
   state: "KS",
   title: "Test Show",
-  scheduledStart: new Date().toISOString().slice(0, 16), // optional default time
-  scheduledStop: new Date(Date.now() + 4 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 16), // 4 hours in the future
+  scheduledStart: getLocalISOString(new Date()), // optional default time
+  scheduledStop: getLocalISOString(new Date(Date.now() + 4 * 60 * 60 * 1000)), // 4 hours in the future
 };
 
 export const CalForm = () => {
   const { shows, addShow, removeShow, user, artist, isLoading, error } =
     useShows();
   const { isAuthenticated } = useAuth();
+  console.log("🚀 ~ CalForm ~ isAuthenticated:", isAuthenticated);
   const router = useRouter();
   const [form, setForm] = useState<Partial<Show>>({});
   const [city, setCity] = useState("");
@@ -128,7 +128,6 @@ export const CalForm = () => {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("🚀 ~ handleChange ~ e.target.value:", e.target.value);
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -169,53 +168,56 @@ export const CalForm = () => {
     }, 300);
   }, [venueInput, city, state]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (form.scheduledStart && form.scheduledStop) {
-      const start = new Date(form.scheduledStart);
-      const end = new Date(form.scheduledStop);
-      if (start >= end) {
-        alert("End time must be after start time.");
-        return;
-      }
-    }
-
-    if (form.title && form.scheduledStart && form.scheduledStop) {
-      try {
-        const response = await fetch("/api/calendar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...form, artistId }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          const newShow: Show = {
-            id: data.id,
-            title: form.title,
-            scheduledStart: form.scheduledStart,
-            scheduledStop: form.scheduledStop,
-          };
-          // setShows([...shows, newShow]);
-          setForm({});
-          setVenueInput("");
-        } else {
-          alert(`Error: ${data.error}`);
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (form.scheduledStart && form.scheduledStop) {
+        const start = new Date(form.scheduledStart);
+        const end = new Date(form.scheduledStop);
+        if (start >= end) {
+          alert("End time must be after start time.");
+          return;
         }
-      } catch (error) {
-        alert("Failed to save show.");
       }
-    }
-  };
 
-  const handleDelete = (id: number) => {
-    // setShows(shows.filter((show) => show.id !== id));
+      if (form.title && form.scheduledStart && form.scheduledStop) {
+        try {
+          const response = await fetch("/api/calendar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...form, artistId }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            const newShow: Show = {
+              id: data.id,
+              title: form.title,
+              scheduledStart: form.scheduledStart,
+              scheduledStop: form.scheduledStop,
+            };
+            // setShows([...shows, newShow]);
+            setForm({});
+            setVenueInput("");
+          } else {
+            alert(`Error: ${data.error}`);
+          }
+        } catch (error) {
+          alert("Failed to save show.");
+        }
+      }
+    },
+    [form, artistId]
+  );
+
+  const handleDelete = (showId: string) => {
+    removeShow({ showId, artistId });
   };
 
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-lg relative">
-      <h2 className="text-2xl font-bold mb-4 text-center">
+      <h2 className="text-2xl text-gray-500 font-bold mb-4 text-center">
         Manage Shows Calendar
       </h2>
       <form onSubmit={handleSubmit} className="mb-6 space-y-4">
@@ -311,47 +313,53 @@ export const CalForm = () => {
         </button>
       </form>
       <div>
-        <h3 className="text-black text-xl font-semibold mb-2">
+        <h3 className="text-gray-500 text-xl font-semibold mb-2">
           Upcoming Shows
         </h3>
         <ul className="max-h-60 overflow-y-auto space-y-3">
-          {shows.map((show) => (
-            <li
-              key={show.id}
-              className="flex justify-between items-center bg-gray-100 p-3 rounded"
-            >
-              <div>
-                <p className="font-medium">{show.title}</p>
-                <p className="text-sm text-gray-600">
-                  {show.scheduledStart
-                    .toDate()
-                    .toLocaleString()
-                    .split(",")[0]
-                    .trim()}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {show.scheduledStart
-                    .toDate()
-                    .toLocaleString()
-                    .split(",")[1]
-                    .trim()}{" "}
-                  →{" "}
-                  {show.scheduledStop
-                    .toDate()
-                    .toLocaleString()
-                    .split(",")[1]
-                    .trim()}
-                </p>
-                <p className="text-sm text-gray-500">{show.venue}</p>
-              </div>
-              <button
-                onClick={() => handleDelete(show.id)}
-                className="text-red-500 hover:text-red-700"
+          {shows.map((show) => {
+            console.log(
+              "🚀 ~ {shows.map ~ show.scheduledStart:",
+              show.scheduledStart
+            );
+            return (
+              <li
+                key={show.id}
+                className="flex justify-between items-center bg-gray-100 p-3 rounded"
               >
-                ✕
-              </button>
-            </li>
-          ))}
+                <div>
+                  <p className="font-medium text-black">{show.showTitle}</p>
+                  <p className="text-sm text-gray-500">{show.venue}</p>
+                  <p className="text-sm text-gray-600">
+                    {show.scheduledStart
+                      .toDate()
+                      .toLocaleString()
+                      .split(",")[0]
+                      .trim()}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {show.scheduledStart
+                      .toDate()
+                      .toLocaleString()
+                      .split(",")[1]
+                      .trim()}{" "}
+                    →{" "}
+                    {show.scheduledStop
+                      .toDate()
+                      .toLocaleString()
+                      .split(",")[1]
+                      .trim()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleDelete(show.id)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  ✕
+                </button>
+              </li>
+            );
+          })}
           {shows.length === 0 && (
             <li className="text-gray-500 text-center">No shows scheduled.</li>
           )}

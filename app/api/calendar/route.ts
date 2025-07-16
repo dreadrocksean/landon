@@ -7,18 +7,9 @@ import "@/lib/gcp/admin"; // initialize admin SDK
 
 const db = getFirestore();
 
+// GET: fetch all shows
 export const GET = async (req: NextRequest) => {
-  console.log("🚀 ~ GET ~ req:", req);
-
   try {
-    // const authHeader = req.headers.get("authorization");
-    // if (!authHeader?.startsWith("Bearer ")) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
-    // const token = authHeader.split("Bearer ")[1];
-    // console.log("🚀 ~ GET ~ token:", token);
-    // await getAuth().verifyIdToken(token);
-
     const showsRef = db.collection("shows");
     const query = showsRef.orderBy("scheduledStart", "desc");
     const snapshot = await query.get();
@@ -31,13 +22,13 @@ export const GET = async (req: NextRequest) => {
         scheduledStart: data.scheduledStart.toDate(),
         scheduledStop: data.scheduledStop.toDate(),
         venueId: data.venueId,
-        // add other fields as needed
+        // Add other fields as needed
       };
     });
 
     return NextResponse.json({ shows });
   } catch (error: any) {
-    console.error("Error fetching shows:", error);
+    console.error("❌ Error fetching shows:", error.message);
     return NextResponse.json(
       { error: "Failed to fetch shows" },
       { status: 500 }
@@ -45,9 +36,10 @@ export const GET = async (req: NextRequest) => {
   }
 };
 
+// POST: create a new show
 export const POST = async (req: NextRequest) => {
   try {
-    const authHeader = req.headers.get("authorization");
+    /* const authHeader = req.headers.get("authorization");
     const token = authHeader?.startsWith("Bearer ")
       ? authHeader.split("Bearer ")[1]
       : null;
@@ -57,31 +49,23 @@ export const POST = async (req: NextRequest) => {
     }
 
     const decodedToken = await getAuth().verifyIdToken(token);
-    const uid = decodedToken.uid;
+    const uid = decodedToken.uid; */
 
     const data = await req.json();
-    const { title, scheduledStart, scheduledStop, venue } = data;
+    const { title, scheduledStart, scheduledStop, venue, artistId } = data;
 
-    if (!title || !scheduledStart || !scheduledStop || !venue) {
+    if (!title || !scheduledStart || !scheduledStop || !venue || !artistId) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const start = Timestamp.fromDate(new Date(scheduledStart));
-    const end = Timestamp.fromDate(new Date(scheduledStop));
+    // const venueRef = await createVenue(venue);
+    // console.log("🚀 ~ POST ~ venueRef id:", venueRef.id);
 
-    const venueResult = await createVenue(venue);
-
-    const newShowId = await createShow({
-      ...data,
-      scheduledStart: start,
-      scheduledStop: end,
-      userId: uid,
-      venueId: venueResult.id,
-      venueRef: venueResult.ref,
-    });
+    const newShowId = await createShow(data);
+    console.log("🚀 ~ POST ~ newShowId:", newShowId);
 
     return NextResponse.json({ success: true, id: newShowId });
   } catch (error: any) {
@@ -94,6 +78,38 @@ export const POST = async (req: NextRequest) => {
             : "Failed to create show",
       },
       { status: error.code === "auth/argument-error" ? 401 : 500 }
+    );
+  }
+};
+
+// DELETE: delete a show by ID
+export const DELETE = async (req: NextRequest) => {
+  try {
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.startsWith("Bearer ")
+      ? authHeader.split("Bearer ")[1]
+      : null;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await getAuth().verifyIdToken(token);
+
+    const { id } = await req.json();
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing show ID" }, { status: 400 });
+    }
+
+    await db.collection("shows").doc(id).delete();
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("❌ Error deleting show:", error.message);
+    return NextResponse.json(
+      { error: "Failed to delete show" },
+      { status: 500 }
     );
   }
 };

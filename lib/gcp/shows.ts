@@ -12,10 +12,16 @@ import {
   Timestamp,
   DocumentReference,
   addDoc,
+  deleteDoc,
   WithFieldValue,
+  updateDoc,
+  limit,
+  orderBy,
 } from "firebase/firestore";
 import { Artist, FirestoreShow, Show, Venue } from "@/lib/schema";
-import { getVenueByRef } from "./venues";
+import { createVenue, getVenueByRef } from "./venues";
+import Time from "react-datepicker/dist/time";
+import { getDataFromRef } from "./general";
 
 /* export const createShow = async ({
   show,
@@ -34,59 +40,71 @@ import { getVenueByRef } from "./venues";
   });
 }; */
 
-export const createVenue = (payload) => createDoc<Venue>("venue", payload);
-
 export const createShow = async ({
   artistId,
   venue,
-  scheduledStartTime,
-  scheduledStopTime,
+  scheduledStart,
+  scheduledStop,
   ...rest
 }: {
   artistId: string;
   venue: Venue;
-  scheduledStartTime: number;
-  scheduledStopTime: number;
+  scheduledStart: string;
+  scheduledStop: string;
   [key: string]: any;
 }): Promise<Show> => {
-  const artistRef = doc(
-    // FIRESTORE_DB,
-    db,
-    `artists`,
-    artistId
-  ) as DocumentReference<Artist>;
+  let venueRef: DocumentReference<Venue> | null = null;
+  const artistRef = doc(db, `artists`, artistId) as DocumentReference<Artist>;
   try {
     if (!venue) throw new Error("Venue required to create show");
-    const foundVenue = await getDocs<Venue>("venue", { name: venue.name });
-    const venueId =
-      foundVenue?.data?.[0]?._id ?? (await createVenue(venue))?.data?._id;
-    const venueRef = doc(db, `venues`, venueId);
+    const queryVenue = query(
+      collection(db, "venues") as CollectionReference<Venue, Venue>,
+      where("name", "==", venue.name)
+    );
+    const snap = await getDocs(queryVenue);
+    if (snap.empty) {
+      console.log("Venue not found, creating new venue");
+      venueRef = await createVenue(venue);
+      console.log("Created new venue:", venueRef.id);
+      venue = { ...venue, id: venueRef.id };
+    } else {
+      console.log("Found existing venue:", snap.docs[0].id);
+      venueRef = doc(db, "venues", snap.docs[0].id) as DocumentReference<
+        Venue,
+        Venue
+      >;
+      venue = { ...venue, id: snap.docs[0].id };
+    }
     const now = new Date().getTime();
-    const live = scheduledStartTime <= now;
+    const live = new Date(scheduledStart).getTime() <= now;
     const createdAt = Timestamp.fromMillis(now);
-    const scheduledStart = Timestamp.fromMillis(scheduledStartTime);
-    const scheduledStop = Timestamp.fromMillis(scheduledStopTime);
+    const start = Timestamp.fromDate(new Date(scheduledStart));
+    const stop = Timestamp.fromDate(new Date(scheduledStop));
 
-    const showRef = await addDoc<Show>(
-      collection(artistRef, "shows") as CollectionReference<Show>,
+    const showRef = await addDoc<FirestoreShow, FirestoreShow>(
+      collection(artistRef, "shows") as CollectionReference<
+        FirestoreShow,
+        FirestoreShow
+      >,
       {
         createdAt,
-        scheduledStart,
-        scheduledStop,
-        venueId,
+        scheduledStart: start,
+        scheduledStop: stop,
+        venueId: venue.id,
         venueRef,
         ...rest,
-      } as WithFieldValue<Show>
+      }
     );
-    const showRes = await getDataFromRef<Show>(showRef);
-    await updateDOC(artistRef, {
+    const showRes = await getDataFromRef<FirestoreShow>(showRef);
+    await updateDoc(artistRef, {
       live,
       currShowId: showRef.id,
-      scheduledStart,
-      scheduledStop,
+      scheduledStart: start,
+      scheduledStop: stop,
     });
     return Promise.resolve(showRes.data);
   } catch (err) {
+    console.log("🚀 ~ err:", err);
     return Promise.reject(err);
   }
 };
@@ -106,7 +124,7 @@ export const getShow = async ({
         artistId,
         "shows",
         currShowId
-      ) as DocumentReference<Show>
+      ) as DocumentReference<FirestoreShow>
     );
     const data = showDoc.data();
     if (data) data._id = showDoc.id;
@@ -149,34 +167,54 @@ export const getShowsByArtistId = async ({
     db,
     `artists/${artistId}/shows`
   ) as CollectionReference<FirestoreShow, FirestoreShow>;
-  const q = query(
-    showsRef,
-    where("scheduledStop", ">", Timestamp.fromDate(new Date("2025-01-01")))
-  );
+  const q = query(showsRef, orderBy("scheduledStop", "desc"), limit(10));
   try {
     setIsLoading(true);
     const snap = await getDocs(q);
 
     const showsPromises = snap.docs.map(async (doc): Promise<Show> => {
       const show = doc.data() as FirestoreShow;
+      const stop =
+        show.scheduledStop instanceof Timestamp
+          ? show.scheduledStop
+          : Timestamp.fromDate(new Date(show.scheduledStop));
+      const start =
+        show.scheduledStart instanceof Timestamp
+          ? show.scheduledStart
+          : Timestamp.fromDate(new Date(show.scheduledStart));
       const durationInHours =
-        (show.scheduledStop.toMillis() - show.scheduledStart.toMillis()) /
-        (1000 * 60 * 60);
+        (stop.toMillis() - start.toMillis()) / (1000 * 60 * 60);
       const duration = Math.round(durationInHours * 100) / 100; // Round to two decimal places
 
-      const venue = await getVenueByRef({
-        ref: show.venueRef as DocumentReference<Venue, Venue>,
-      });
+      const venue = show.venueRef
+        ? await getVenueByRef({
+            ref: show.venueRef as DocumentReference<Venue, Venue>,
+          })
+        : null;
       return Promise.resolve({
         id: doc.id,
-        artistId: artistId,
+        showTitle: show.title ?? show.showTitle ?? "",
         venue: venue?.name ?? "",
         createdAt: show.createdAt,
-        scheduledStart: show.scheduledStart,
-        scheduledStop: show.scheduledStop,
-        date: show.scheduledStart.toDate(),
+        scheduledStart:
+          typeof show.scheduledStart === "string"
+            ? Timestamp.fromDate(new Date(show.scheduledStart))
+            : show.scheduledStart,
+        scheduledStop:
+          typeof show.scheduledStop === "string"
+            ? Timestamp.fromDate(new Date(show.scheduledStop))
+            : show.scheduledStop,
+        date:
+          typeof show.scheduledStart === "string"
+            ? new Date(show.scheduledStart)
+            : show.scheduledStart.toDate(),
         duration: duration,
-        location: venue?.location,
+        location:
+          venue?.location && typeof venue.location === "object"
+            ? venue.location.formatted_address
+            : venue?.location && typeof venue.location === "string"
+            ? venue.location
+            : "",
       });
     });
     const shows = await Promise.all(showsPromises);
@@ -221,17 +259,18 @@ export const updateShow = async ({
 };
 
 export const deleteShow = async ({
-  id,
+  showId,
   artistId,
 }: {
-  id: string;
+  showId: string;
   artistId: string;
 }): Promise<void> => {
-  const showsRef = collection(
-    db,
-    `artists/${artistId}/shows`
-  ) as CollectionReference<Show, Show>;
-  await setDoc(doc(showsRef, id), { status: "booked" }, { merge: true });
+  try {
+    await deleteDoc(doc(db, "artists", artistId, "shows", showId));
+  } catch (error) {
+    console.error("Error deleting show:", error);
+    throw error;
+  }
 };
 
 export const listShows = async ({
