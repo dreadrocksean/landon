@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, use } from "react";
 import { user as userData } from "@/data/data";
 import { getArtistByUserId } from "@/lib/gcp/artists";
 import { getUserByEmail } from "@/lib/gcp/users";
@@ -24,57 +24,66 @@ const useShows = (): UseShowsReturn => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getShows = async (): Promise<void> => {
-    try {
-      if (!artist?.id) {
-        setShows([]);
-        throw new Error("Artist ID is required to fetch shows");
+  const getShows = useCallback(async (): Promise<void> => {
+    if (artist?.id) {
+      try {
+        if (!artist?.id) {
+          setShows([]);
+          throw new Error("Artist ID is required to fetch shows");
+        }
+        console.log("Fetching shows for artist ID:", artist?.id);
+        setIsLoading(true);
+        setError(null);
+        const shows = await getShowsByArtistId({
+          artistId: artist.id,
+          setError,
+          setIsLoading,
+        });
+        setShows(shows || []);
+      } catch (error) {
+        console.error("Error fetching shows:", error);
+        setError("Failed to fetch shows");
+        setIsLoading(false);
       }
-      console.log("Fetching shows for artist ID:", artist?.id);
-      setIsLoading(true);
-      setError(null);
-      const shows = await getShowsByArtistId({
-        artistId: artist.id,
-        setError,
-        setIsLoading,
-      });
-      setShows(shows || []);
-    } catch (error) {
-      console.error("Error fetching shows:", error);
-      setError("Failed to fetch shows");
-      setIsLoading(false);
     }
-  };
+  }, [artist?.id]);
 
-  const getArtist = async ({ userId }: { userId?: string }): Promise<void> => {
-    try {
-      if (!userId) {
-        setArtist(null);
-        throw new Error("User ID is required to fetch artist");
+  const getArtist = useCallback(
+    async ({ userId }: { userId?: string }): Promise<void> => {
+      try {
+        if (!userId) {
+          setArtist(null);
+          throw new Error("User ID is required to fetch artist");
+        }
+        setIsLoading(true);
+        setError(null);
+        console.log("Fetching artist by user ID:", userId);
+        const artist = await getArtistByUserId({ userId });
+        setArtist(artist);
+        getShows();
+      } catch (error) {
+        console.error("Error fetching artist:", error);
+        setError("Failed to fetch artist");
+        setIsLoading(false);
       }
-      setIsLoading(true);
-      setError(null);
-      console.log("Fetching artist by user ID:", userId);
-      const artist = await getArtistByUserId({ userId });
-      setArtist(artist);
-      getShows();
-    } catch (error) {
-      console.error("Error fetching artist:", error);
-      setError("Failed to fetch artist");
-      setIsLoading(false);
-    }
-  };
+    },
+    [getShows]
+  );
 
-  const getUser = async (email: string): Promise<void> => {
+  const getUser = useCallback(async (): Promise<void> => {
     try {
-      if (!email) {
+      if (!userData?.email) {
         setUser(null);
         throw new Error("Email is required to fetch user");
       }
       setIsLoading(true);
       setError(null);
-      console.log("Fetching user by email:", email);
-      const user = await getUserByEmail({ email, setError, setIsLoading });
+      console.log("Fetching user by email:", userData?.email);
+      const user = await getUserByEmail({
+        email: userData?.email,
+        setError,
+        setIsLoading,
+      });
       setUser(user);
       getArtist({ userId: user?.id });
     } catch (error) {
@@ -82,7 +91,7 @@ const useShows = (): UseShowsReturn => {
       setError("Failed to fetch user");
       setIsLoading(false);
     }
-  };
+  }, [getArtist]);
 
   const removeShow = async ({
     showId,
@@ -110,8 +119,8 @@ const useShows = (): UseShowsReturn => {
     setIsLoading(true);
     setError(null);
     console.log("Fetching shows...");
-    getUser(userData.email);
-  }, [userData?.email]);
+    getUser();
+  }, [getUser]);
 
   const addShow = (show: Show): void => {
     setShows((prevShows) => [...prevShows, show]);
