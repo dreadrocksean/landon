@@ -1,3 +1,5 @@
+//fonts.ts
+
 import {
   DM_Sans,
   Space_Grotesk,

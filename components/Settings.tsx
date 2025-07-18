@@ -1,5 +1,5 @@
 "use client";
-
+import React from "react";
 import { useState } from "react";
 import { IoSettingsSharp } from "react-icons/io5";
 import { CiTextAlignLeft, CiTextAlignRight } from "react-icons/ci";

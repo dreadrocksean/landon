@@ -1,3 +1,4 @@
+import React, { FC } from "react";
 import Header from "@/components/header";
 import Hero from "@/components/hero";
 import Featured from "@/components/featured";
@@ -9,20 +10,14 @@ import FeaturedGrid from "@/components/featured-grid";
 // import Testimonials from "@/components/testimonials";
 // import LatestBlogs from "@/components/latest-blogs";
 import Footer from "@/components/footer";
-import type { FC } from "react";
 
-export const Home: FC = () => (
+const Home: FC = () => (
   <main className="bg-bg-dark text-white text-base">
     <Header />
     <Hero />
     <Featured />
-    {/* <NewestAlbums /> */}
     <UpcomingShows />
     <FeaturedGrid />
-    {/* <FeaturedAlbums /> */}
-    {/* <Members /> */}
-    {/* <Testimonials /> */}
-    {/* <LatestBlogs /> */}
     <Footer />
   </main>
 );

@@ -1,7 +1,7 @@
 "use client";
 
 import { Timestamp } from "firebase/firestore";
-import React, { useState, useEffect, useCallback, useRef, use } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -12,8 +12,7 @@ import useShows from "@/hooks/useShows";
 
 import "@/styles/calendar-form.css";
 
-import { Show, Artist, Venue } from "@/lib/schema";
-import { getShowsByArtistId } from "@/lib/gcp/shows";
+import { Venue, FirestoreShow } from "@/lib/schema";
 
 export interface VenueCategory {
   icon: { prefix: string; suffix: string };
@@ -55,32 +54,50 @@ const fetchVenues = async ({
   }
 };
 
-const init = {
+const localSchedule = {
+  start: getLocalISOString(new Date()),
+  end: getLocalISOString(new Date(Date.now() + 4 * 60 * 60 * 1000)),
+};
+type Form = Omit<
+  FirestoreShow,
+  "id" | "createdAt" | "scheduledStart" | "scheduledStop"
+> & {
+  venue?: Venue;
+  scheduledStart?: Timestamp;
+  scheduledStop?: Timestamp;
+};
+
+interface Field {
+  city?: string;
+  state?: string;
+  venueInput?: string;
+}
+
+const init: Field = {
   city: "Lenexa",
   state: "KS",
+  venueInput: "",
+};
+
+const initForm: Form = {
   title: "Test Show",
-  scheduledStart: getLocalISOString(new Date()), // optional default time
-  scheduledStop: getLocalISOString(new Date(Date.now() + 4 * 60 * 60 * 1000)), // 4 hours in the future
+  scheduledStart: Timestamp.fromDate(new Date(localSchedule.start)),
+  scheduledStop: Timestamp.fromDate(new Date(localSchedule.end)),
 };
 
 export const CalForm = () => {
-  const {
-    shows,
-    getShows,
-    addShow,
-    removeShow,
-    user,
-    artist,
-    isLoading,
-    error,
-  } = useShows();
+  const { shows, getShows, removeShow, artist, isLoading, error } = useShows();
   const { isAuthenticated } = useAuth();
   console.log("🚀 ~ CalForm ~ isAuthenticated:", isAuthenticated);
   const router = useRouter();
-  const [form, setForm] = useState<Partial<Show>>({});
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [venueInput, setVenueInput] = useState("");
+  const [form, setForm] = useState<Form>({
+    title: initForm.title,
+    scheduledStart: initForm.scheduledStart,
+    scheduledStop: initForm.scheduledStop,
+  });
+  const [city, setCity] = useState(init.city);
+  const [state, setState] = useState(init.state);
+  const [venueInput, setVenueInput] = useState(init.venueInput);
   const [venueSuggestions, setVenueSuggestions] = useState<Venue[]>([]);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -93,18 +110,6 @@ export const CalForm = () => {
       router.push("/calendar");
     }
   }, [isAuthenticated]);
-
-  useEffect(() => {
-    // Initialize form with default values
-    setForm({
-      venue: null,
-      title: init.title,
-      scheduledStart: init.scheduledStart, // optional default time
-      scheduledStop: init.scheduledStop, // 4 hours in the future
-    });
-    setCity(init.city);
-    setState(init.state);
-  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -129,7 +134,7 @@ export const CalForm = () => {
   }, [venueSuggestions]);
 
   useEffect(() => {
-    if (venueInput.trim().length < 3 || !city || !state) {
+    if ((venueInput?.trim() ?? "").length < 3 || !city || !state) {
       setVenueSuggestions([]);
       return;
     }
@@ -137,6 +142,10 @@ export const CalForm = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       const near = `${city}, ${state}`;
+      if (!venueInput) {
+        setVenueSuggestions([]);
+        return;
+      }
       const venues = await fetchVenues({ query: venueInput, near });
 
       if (venues.length === 1) {
@@ -151,8 +160,8 @@ export const CalForm = () => {
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (form.scheduledStart && form.scheduledStop) {
-        const start = new Date(form.scheduledStart);
-        const end = new Date(form.scheduledStop);
+        const start = form.scheduledStart.toDate();
+        const end = form.scheduledStop.toDate();
         if (start >= end) {
           alert("End time must be after start time.");
           return;
@@ -170,13 +179,7 @@ export const CalForm = () => {
           const data = await response.json();
 
           if (data.success) {
-            const newShow: Show = {
-              id: data.id,
-              title: form.title,
-              scheduledStart: form.scheduledStart,
-              scheduledStop: form.scheduledStop,
-            };
-            setForm({});
+            setForm(initForm);
             setVenueInput("");
             getShows();
           } else {
@@ -211,13 +214,11 @@ export const CalForm = () => {
         />
         <div className="flex space-x-2">
           <ReactDatePicker
-            selected={
-              form.scheduledStart ? new Date(form.scheduledStart) : null
-            }
+            selected={form.scheduledStart?.toDate() ?? null}
             onChange={(date) =>
               setForm({
                 ...form,
-                scheduledStart: date?.toISOString() ?? "",
+                scheduledStart: date ? Timestamp.fromDate(date) : undefined,
               })
             }
             showTimeSelect
@@ -227,9 +228,12 @@ export const CalForm = () => {
             className="w-full px-3 py-2 border rounded"
           />
           <ReactDatePicker
-            selected={form.scheduledStop ? new Date(form.scheduledStop) : null}
+            selected={form.scheduledStop ? form.scheduledStop.toDate() : null}
             onChange={(date) =>
-              setForm({ ...form, scheduledStop: date?.toISOString() ?? "" })
+              setForm({
+                ...form,
+                scheduledStop: date ? Timestamp.fromDate(date) : undefined,
+              })
             }
             showTimeSelect
             timeIntervals={15}

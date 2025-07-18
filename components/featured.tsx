@@ -1,4 +1,6 @@
 "use client";
+
+import React from "react";
 import { CiPlay1 } from "react-icons/ci";
 import Image from "next/image";
 import { useState } from "react";
@@ -29,7 +31,7 @@ const Featured: React.FC = () => {
     setShowMore(!showMore);
   };
 
-  const renderShowMore = (): JSX.Element =>
+  const renderShowMore = () =>
     !showMore ? (
       <div onClick={toggleMore} className="cursor-pointer">
         <div className="font-medium text-rose hover:text-white duration-300 transition-all ease-linear">

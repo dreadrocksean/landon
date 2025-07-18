@@ -47,6 +47,6 @@ export const getUserByEmail = async ({
         : `Error getting user by email: ${email}`
     );
     setIsLoading(false);
-    throw new Error(error);
+    throw error;
   }
 };

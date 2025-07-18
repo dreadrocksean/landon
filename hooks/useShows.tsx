@@ -6,7 +6,7 @@ import { getShowsByArtistId, deleteShow } from "@/lib/gcp/shows";
 import { User, Artist, Show } from "@/lib/schema";
 import useAuth from "./useAuth";
 
-type UseShowsReturn = {
+export type UseShowsReturn = {
   shows: Show[];
   addShow: (show: Show) => void;
   getShows: () => Promise<void>;

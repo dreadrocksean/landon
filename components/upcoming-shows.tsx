@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Container from "./container";
@@ -10,18 +11,7 @@ import { useLayout } from "@/app/LayoutProvider";
 import { twMerge } from "tailwind-merge";
 
 import "@/styles/shows.css";
-
-type Show = {
-  id: string | number;
-  scheduledStart: { toDate: () => Date };
-  scheduledStop: { toDate: () => Date };
-  status?: string;
-  venue: string;
-  showTitle?: string;
-  title?: string;
-  image?: string;
-  duration?: number;
-};
+import { Show } from "@/lib/schema";
 
 type Schedule = {
   start: {
@@ -63,18 +53,18 @@ const getScheduleFromTimestamps = ({
   };
 };
 
-const getSchedule = (
-  date: string | number | Date,
-  duration: number
-): Schedule => {
-  const start = new Date(date);
-  const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
+// const getSchedule = (
+//   date: string | number | Date,
+//   duration: number
+// ): Schedule => {
+//   const start = new Date(date);
+//   const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
 
-  return {
-    start: parseDate(start),
-    end: parseDate(end),
-  };
-};
+//   return {
+//     start: parseDate(start),
+//     end: parseDate(end),
+//   };
+// };
 
 const UpcomingShows = () => {
   const { isRTL } = useLayout();
@@ -92,7 +82,7 @@ const UpcomingShows = () => {
               start: show.scheduledStart,
               stop: show.scheduledStop,
             });
-            const cancelled = show.status === "cancelled";
+            const cancelled = show.showStatus === "cancelled";
 
             return (
               <div

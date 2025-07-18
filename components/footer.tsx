@@ -1,13 +1,6 @@
-import Image from "next/image";
+import React from "react";
 import Container from "./container";
 import Link from "next/link";
-import {
-  FaFacebookF,
-  FaTwitter,
-  FaInstagram,
-  FaPinterestP,
-} from "react-icons/fa6";
-import SocialIcon from "./icon";
 import { ReactNode, AnchorHTMLAttributes } from "react";
 
 //method call

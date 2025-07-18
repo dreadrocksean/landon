@@ -52,7 +52,7 @@ export const getArtistByUserId = async ({
 
 export const listArtists = async (): Promise<Artist[]> => {
   const snap = await getDocs<Artist, Artist>(artistsRef);
-  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Artist));
+  return snap.docs.map((doc) => ({ ...doc.data(), id: doc.id } as Artist));
 };
 
 export const updateArtist = async (artist: Artist) => {

@@ -34,7 +34,7 @@ export const getVenueById = async ({
   const docRef = doc(venuesRef, id);
   const snap = await getDoc(docRef);
   if (snap.exists()) {
-    return { id: snap.id, ...snap.data() } as Venue;
+    return { ...snap.data(), id: snap.id } as Venue;
   }
   return null;
 };
@@ -62,7 +62,7 @@ export const getVenueByRef = async ({
 
 export const listVenues = async (): Promise<Venue[]> => {
   const snap = await getDocs<Venue, Venue>(venuesRef);
-  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Venue));
+  return snap.docs.map((doc) => ({ ...doc.data(), id: doc.id } as Venue));
 };
 
 export const updateVenue = async (venue: Venue) => {

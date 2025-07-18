@@ -126,8 +126,7 @@ export const getShow = async ({
         currShowId
       ) as DocumentReference<FirestoreShow>
     );
-    const data = showDoc.data();
-    if (data) data._id = showDoc.id;
+    const data = { ...showDoc.data(), id: showDoc.id } as Show;
     return Promise.resolve(data);
   } catch (err: any) {
     console.error("getShow error", err);
@@ -135,17 +134,25 @@ export const getShow = async ({
   }
 };
 
-export const endShow = async (artistId, currShowId): Promise<void> => {
-  const artistRef = doc(db, `artists`, artistId) as DocumentReference<Artist>;
-  const showRef = doc(
-    artistRef,
-    "shows",
-    currShowId
-  ) as DocumentReference<Show>;
+export const endShow = async (
+  artistId: string,
+  currShowId: string
+): Promise<void> => {
+  const artistRef = doc(db, `artists`, artistId) as DocumentReference<
+    Artist,
+    Artist
+  >;
+  const showRef = doc(artistRef, "shows", currShowId) as DocumentReference<
+    Show,
+    Show
+  >;
   try {
     const timestamp = Timestamp.now();
-    await updateDOC<Show>(showRef, { endTime: timestamp });
-    await updateDOC<Artist>(artistRef, { live: false, currShowId: null });
+    await updateDoc<Show, Show>(showRef, { scheduledStop: timestamp });
+    await updateDoc<Artist, Artist>(artistRef, {
+      live: false,
+      currShowId: null,
+    });
     console.log("Ended show");
     return Promise.resolve();
   } catch (err) {
@@ -241,7 +248,7 @@ export const listShowsForArtist = async (artistId: string): Promise<Show[]> => {
   ) as CollectionReference<Show, Show>;
   const q = query(showsRef, where("artistId", "==", artistId));
   const snap = await getDocs(q);
-  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  return snap.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
 };
 
 export const updateShow = async ({
@@ -283,5 +290,5 @@ export const listShows = async ({
     `artists/${artistId}/shows`
   ) as CollectionReference<Show, Show>;
   const snap = await getDocs(showsRef);
-  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  return snap.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
 };

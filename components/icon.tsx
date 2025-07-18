@@ -1,3 +1,4 @@
+import React from "react";
 import { twMerge } from "tailwind-merge";
 import { ComponentType, HTMLAttributes } from "react";
 

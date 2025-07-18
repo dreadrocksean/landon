@@ -15,6 +15,7 @@ import AnimationProvider from "./AnimationProvider";
 import Settings from "@/components/Settings";
 import LayoutProvider from "./LayoutProvider";
 import "@/styles/layout.css";
+import React from "react";
 
 // ✅ Required metadata export in App Router
 export const metadata = {

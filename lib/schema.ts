@@ -7,6 +7,8 @@ export interface Artist {
   instrument?: string;
   createdAt: Timestamp;
   bio?: string;
+  live?: boolean; // Whether the artist is currently live
+  currShowId?: string | null; // ID of the current show, if any
   image?: string; // URL to the artist's image
   socialLinks?: {
     facebook?: string;
@@ -26,6 +28,7 @@ export interface BaseShow {
   scheduledStart: Timestamp; // Start time of the show
   scheduledStop: Timestamp; // End time of the show
   showTitle?: string;
+  title?: string;
   showStatus?: "free" | "cancelled" | "confirmed";
 }
 
@@ -39,26 +42,14 @@ export interface FirestoreShow extends BaseShow {
 
 export interface Show extends FirestoreShow {
   id: string; // Document ID in Firestore
-  venue: string; // Name of the venue
-  date: Date; // Date of the show
-  duration: number; // Duration in hours
+  venue?: string; // Name of the venue
+  date?: Date;
+  duration?: number; // Duration in hours
   location?: string; // e.g., city or address
+  image?: string; // URL
+  //   totalTips?: number; // Total tips received for the show
+  //   entranceFee?: number; // in USD
 }
-
-// export interface Show {
-//   id: string;
-//   artistId: string; // FK-like reference
-//   createdAt: Timestamp;
-//   date: Date;
-//   venue: string;
-//   duration: number; // in hours
-//   title?: string;
-//   status?: "free" | "cancelled" | "confirmed";
-//   description?: string;
-//   entranceFee?: number; // in USD
-//   location?: Location; // e.g., city or address
-//   totalTips?: number; // Total tips received for the show
-// }
 
 export interface Place {
   id: string;
@@ -87,6 +78,7 @@ export interface Location {
 
 export interface Venue {
   id: string;
+  fsq_id?: string; // Foursquare ID
   createdAt: Timestamp; // Timestamp for when the venue was created
   location: Location;
   name: string; // Name of the venue

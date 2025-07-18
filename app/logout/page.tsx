@@ -6,7 +6,7 @@ import useAuth from "@/hooks/useAuth";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/gcp/client";
 
-export const Login: React.FC = () => {
+const Login: React.FC = () => {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
 
