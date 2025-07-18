@@ -94,14 +94,16 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
 export const DELETE = async (req: NextRequest): Promise<NextResponse> => {
   try {
     const authHeader = req.headers.get("authorization");
-    const token = authHeader?.startsWith("Bearer ")
-      ? authHeader.split("Bearer ")[1]
-      : null;
+    const token = authHeader?.match(/^Bearer (.+)$/)?.[1] ?? null;
 
     if (!token) {
+      console.error(
+        "❌ Missing Bearer token in Authorization header:",
+        authHeader
+      );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
+    console.log("🔐 Verifying token:", token);
     await getAuth().verifyIdToken(token);
 
     const { id }: DeleteShowBody = await req.json();
