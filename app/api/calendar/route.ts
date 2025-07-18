@@ -89,37 +89,3 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
     );
   }
 };
-
-// DELETE: delete a show by ID
-export const DELETE = async (req: NextRequest): Promise<NextResponse> => {
-  try {
-    const authHeader = req.headers.get("authorization");
-    const token = authHeader?.match(/^Bearer (.+)$/)?.[1] ?? null;
-
-    if (!token) {
-      console.error(
-        "❌ Missing Bearer token in Authorization header:",
-        authHeader
-      );
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    console.log("🔐 Verifying token:", token);
-    await getAuth().verifyIdToken(token);
-
-    const { id }: DeleteShowBody = await req.json();
-
-    if (!id) {
-      return NextResponse.json({ error: "Missing show ID" }, { status: 400 });
-    }
-
-    await db.collection("shows").doc(id).delete();
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("❌ Error deleting show:", error.message);
-    return NextResponse.json(
-      { error: "Failed to delete show" },
-      { status: 500 }
-    );
-  }
-};
