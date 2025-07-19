@@ -12,14 +12,7 @@ import useShows from "@/hooks/useShows";
 
 import "@/styles/calendar-form.css";
 
-import { Venue, FirestoreShow } from "@/lib/schema";
-import { createShow } from "@/lib/gcp/shows";
-
-export interface VenueCategory {
-  icon: { prefix: string; suffix: string };
-  id: number;
-  name: string;
-}
+import { Venue, FirestoreShow, FSQVenue } from "@/lib/schema";
 
 const foursquare = {
   CLIENT_ID: "QFMSNEWT5412BKBVIGV3HBAJYHZ2RXXYXQ2U0AWS2OGX01IA",
@@ -33,7 +26,7 @@ const fetchVenues = async ({
 }: {
   query: string;
   near: string;
-}): Promise<Venue[]> => {
+}): Promise<FSQVenue[]> => {
   const url = `https://api.foursquare.com/v3/places/search?query=${encodeURIComponent(
     query
   )}&near=${encodeURIComponent(near)}&client_id=${
@@ -59,20 +52,27 @@ const localSchedule = {
   start: getLocalISOString(new Date()),
   end: getLocalISOString(new Date(Date.now() + 4 * 60 * 60 * 1000)),
 };
-type Form = Omit<
+
+export type Form = Omit<
   FirestoreShow,
   "id" | "createdAt" | "scheduledStart" | "scheduledStop"
 > & {
-  venue?: Venue;
+  venue?: FSQVenue;
   scheduledStart?: Timestamp;
   scheduledStop?: Timestamp;
 };
 
-interface Field {
+type Field = {
   city?: string;
   state?: string;
   venueInput?: string;
-}
+};
+
+type VenueSuggestion = {
+  id?: string; // Foursquare ID
+  name: string; // Name of the venue
+  address: string; // Formatted address
+};
 
 const init: Field = {
   city: "Lenexa",
@@ -87,7 +87,7 @@ const initForm: Form = {
 };
 
 export const CalForm = () => {
-  const { shows, getShows, removeShow, artist, isLoading, error } = useShows();
+  const { shows, addShow, removeShow, artist, isLoading, error } = useShows();
   const { isAuthenticated } = useAuth();
   console.log("🚀 ~ CalForm ~ isAuthenticated:", isAuthenticated);
   const router = useRouter();
@@ -99,7 +99,9 @@ export const CalForm = () => {
   const [city, setCity] = useState(init.city);
   const [state, setState] = useState(init.state);
   const [venueInput, setVenueInput] = useState(init.venueInput);
-  const [venueSuggestions, setVenueSuggestions] = useState<Venue[]>([]);
+  const [venueSuggestions, setVenueSuggestions] = useState<FSQVenue[]>([]);
+  const [venueSuggestionSelected, setVenueSuggestionSelected] =
+    useState<boolean>(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const artistId = artist?.id ?? "";
@@ -116,9 +118,8 @@ export const CalForm = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleVenueSelect = (venue: Venue) => {
+  const handleVenueSelect = (venue: FSQVenue) => {
     setVenueInput(venue.name);
-    // setCity(`${venue.location?.locality}, ${venue.location?.dma}`);
     setForm({
       ...form,
       venue,
@@ -126,88 +127,80 @@ export const CalForm = () => {
     setVenueSuggestions([]);
   };
 
-  const formattedVenueList = useCallback(() => {
-    return venueSuggestions.map((v) => ({
-      id: v.fsq_id,
-      name: v.name,
-      address: v.location.formatted_address,
-    }));
-  }, [venueSuggestions]);
+  const formattedVenueList = useCallback(
+    () =>
+      venueSuggestions.map((v) => ({
+        id: v.fsq_id,
+        name: v.name,
+        address: v.location.formatted_address,
+      })),
+    [venueSuggestions]
+  );
 
   useEffect(() => {
-    if ((venueInput?.trim() ?? "").length < 3 || !city || !state) {
+    console.log("🚀 ~ useEffect ~ venueInput:", venueInput);
+    if (
+      (venueInput?.trim() ?? "").length > 2 &&
+      city &&
+      state &&
+      !venueSuggestionSelected
+    ) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(async () => {
+        const near = `${city}, ${state}`;
+        const venues = await fetchVenues({ query: venueInput!, near });
+
+        if (venues.length === 1) {
+          handleVenueSelect(venues[0]);
+        } else {
+          setVenueSuggestions(venues);
+        }
+      }, 300);
+    } else {
       setVenueSuggestions([]);
-      return;
     }
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      const near = `${city}, ${state}`;
-      if (!venueInput) {
-        setVenueSuggestions([]);
-        return;
-      }
-      const venues = await fetchVenues({ query: venueInput, near });
-
-      if (venues.length === 1) {
-        handleVenueSelect(venues[0]);
-      } else {
-        setVenueSuggestions(venues);
-      }
-    }, 300);
   }, [venueInput, city, state]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (form.scheduledStart && form.scheduledStop) {
-        const start = form.scheduledStart.toDate();
-        const end = form.scheduledStop.toDate();
-        if (start >= end) {
-          alert("End time must be after start time.");
-          return;
-        }
-      }
-
-      if (
-        form.title &&
-        form.scheduledStart &&
-        form.scheduledStop &&
-        form.venue
-      ) {
-        try {
-          /* const response = await fetch("/api/calendar", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...form, artistId }),
-          }); */
-
-          const data = await createShow({
-            artistId,
-            venue: form.venue,
-            scheduledStart: form.scheduledStart,
-            scheduledStop: form.scheduledStop,
-            title: form.title,
-          });
-
-          if (data.success) {
-            setForm(initForm);
-            setVenueInput("");
-            getShows();
-          } else {
-            alert(`Error: ${data.error}`);
-          }
-        } catch (error) {
-          alert("Failed to save show.");
-          console.error("Error saving show:", error);
-        }
+      try {
+        await addShow(form);
+        setForm({ ...initForm });
+        setVenueInput("");
+      } catch (error) {
+        console.error("Error adding show:", error);
       }
     },
     [form, artistId]
   );
 
+  const handleVenueDropdownSelect =
+    (venue: VenueSuggestion, index: number) => () => {
+      setVenueSuggestionSelected(true);
+      handleVenueSelect(
+        venueSuggestions.find(
+          (v) => v.fsq_id === venue.id || venueSuggestions[index] === v
+        ) as FSQVenue
+      );
+    };
+
   const handleDelete = (showId: string) => {
     removeShow({ showId, artistId });
+  };
+
+  const onVenueInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setVenueInput(e.target.value);
+    setVenueSuggestionSelected(false);
+    // if (debounceRef.current) clearTimeout(debounceRef.current);
+    // setVenueSuggestions([]);
+    // debounceRef.current = setTimeout(() => {
+    //   if (e.target.value.trim().length > 2) {
+    //     setVenueInput(e.target.value);
+    //   } else {
+    //     setVenueSuggestions([]);
+    //   }
+    // }, 300);
   };
 
   return (
@@ -278,21 +271,15 @@ export const CalForm = () => {
           type="text"
           placeholder="Search Venue"
           value={venueInput}
-          onChange={(e) => {
-            setVenueInput(e.target.value);
-          }}
+          onChange={onVenueInputChange}
           className="w-full px-3 py-2 border rounded"
         />
         {venueSuggestions.length > 0 && (
           <ul className="absolute z-20 bg-white border w-full rounded max-h-60 overflow-y-auto">
-            {formattedVenueList().map((venue) => (
+            {formattedVenueList().map((venue: VenueSuggestion, i) => (
               <li
-                key={venue.id}
-                onClick={() =>
-                  handleVenueSelect(
-                    venueSuggestions.find((v) => v.fsq_id === venue.id)!
-                  )
-                }
+                key={i}
+                onClick={handleVenueDropdownSelect(venue, i)}
                 className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
               >
                 <strong>{venue.name}</strong>
@@ -305,7 +292,7 @@ export const CalForm = () => {
           type="submit"
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
         >
-          Add Show
+          {isLoading ? "Adding Show..." : "Add Show"}
         </button>
       </form>
       <div>
@@ -314,10 +301,6 @@ export const CalForm = () => {
         </h3>
         <ul className="max-h-60 overflow-y-auto space-y-3">
           {shows.map((show) => {
-            console.log(
-              "🚀 ~ {shows.map ~ show.scheduledStart:",
-              show.scheduledStart
-            );
             return (
               <li
                 key={show.id}
@@ -325,7 +308,7 @@ export const CalForm = () => {
               >
                 <div>
                   <p className="font-medium text-black">{show.showTitle}</p>
-                  <p className="text-sm text-gray-500">{show.venue}</p>
+                  <p className="text-sm text-gray-500">{show.venueName}</p>
                   <p className="text-sm text-gray-600">
                     {show.scheduledStart
                       .toDate()

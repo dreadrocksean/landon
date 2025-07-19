@@ -108,7 +108,7 @@ const UpcomingShows = () => {
                         : "transition-all duration-300 ease-linear group-hover:text-rose"
                     } font-bold text-xl text-center md:text-start md:line-clamp-1`}
                   >
-                    {show.venue}
+                    {show.venueName}
                   </h4>
                   <h4
                     className={`${

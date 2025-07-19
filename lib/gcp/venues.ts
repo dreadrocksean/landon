@@ -43,13 +43,13 @@ export const getVenueByRef = async ({
   ref,
 }: {
   ref: DocumentReference<Venue, Venue>;
-}): Promise<Venue | null> => {
+}): Promise<Venue | undefined> => {
   try {
     const snap = await getDoc(ref);
     if (snap.exists()) {
       return Promise.resolve({ ...snap.data(), id: snap.id });
     }
-    return Promise.resolve(null);
+    return Promise.resolve(undefined);
   } catch (error) {
     console.error("Error fetching venue by reference:", error);
     throw new Error(

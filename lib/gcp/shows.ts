@@ -72,6 +72,7 @@ export const createShow = async ({
         scheduledStop,
         venueId: venue.id,
         venueRef,
+        venueName: venue.name,
         ...rest,
       }
     );
@@ -177,11 +178,12 @@ export const getShowsByArtistId = async ({
         ? await getVenueByRef({
             ref: show.venueRef as DocumentReference<Venue, Venue>,
           })
-        : null;
+        : undefined;
       return Promise.resolve({
         id: doc.id,
         showTitle: show.title ?? show.showTitle ?? "",
-        venue: venue?.name ?? "",
+        venueName: venue?.name ?? "",
+        venue,
         createdAt: show.createdAt,
         scheduledStart:
           typeof show.scheduledStart === "string"

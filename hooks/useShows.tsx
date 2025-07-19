@@ -4,11 +4,12 @@ import { getArtistByUserId } from "@/lib/gcp/artists";
 import { getUserByEmail } from "@/lib/gcp/users";
 import { getShowsByArtistId, deleteShow } from "@/lib/gcp/shows";
 import { User, Artist, Show } from "@/lib/schema";
-import useAuth from "./useAuth";
+import { createShow } from "@/lib/gcp/shows";
+import { Form } from "@/app/calendar/CalForm";
 
 export type UseShowsReturn = {
   shows: Show[];
-  addShow: (show: Show) => void;
+  addShow: (show: Form) => void;
   getShows: () => Promise<void>;
   removeShow: (params: { showId: string; artistId: string }) => Promise<void>;
   user: User | null;
@@ -103,9 +104,7 @@ const useShows = (): UseShowsReturn => {
     try {
       setIsLoading(true);
       setError(null);
-      console.log("Deleting show with ID:", showId);
       await deleteShow({ showId, artistId });
-      console.log("Show deleted successfully");
       getShows();
     } catch (error) {
       console.error("Error deleting show:", error);
@@ -122,8 +121,47 @@ const useShows = (): UseShowsReturn => {
     getUser();
   }, [getUser]);
 
-  const addShow = (show: Show): void => {
-    setShows((prevShows) => [...prevShows, show]);
+  const addShow = async (form: Form): Promise<void> => {
+    if (form.scheduledStart && form.scheduledStop) {
+      const start = form.scheduledStart.toDate();
+      const end = form.scheduledStop.toDate();
+      if (start >= end) {
+        alert("End time must be after start time.");
+        return;
+      }
+    }
+
+    if (
+      form.title &&
+      form.scheduledStart &&
+      form.scheduledStop &&
+      form.venue &&
+      artist?.id
+    ) {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await createShow({
+          artistId: artist.id,
+          venue: form.venue,
+          scheduledStart: form.scheduledStart,
+          scheduledStop: form.scheduledStop,
+          title: form.title,
+        });
+
+        setIsLoading(false);
+        if (data.success) {
+          getShows();
+        } else {
+          alert(`Error: ${data.error}`);
+          setError(`Error: ${data.error}`);
+        }
+      } catch (error) {
+        alert("Failed to save show.");
+        console.error("Error saving show:", error);
+        setError(`Error saving show: ${error}`);
+      }
+    }
   };
 
   return {

@@ -41,6 +41,7 @@ export interface BaseShow {
 export interface FirestoreShow extends BaseShow {
   venueId?: string; // Reference to the venue
   venueRef?: DocumentReference; // Reference to the venue document
+  venueName?: string; // Name of the venue
   doorFee?: number; // in USD
   artistFee?: number; // in USD
   totalTips?: number; // Total tips received for the show
@@ -48,7 +49,7 @@ export interface FirestoreShow extends BaseShow {
 
 export interface Show extends FirestoreShow {
   id: string; // Document ID in Firestore
-  venue?: string; // Name of the venue
+  venue?: Venue; // Full venue object
   date?: Date;
   duration?: number; // Duration in hours
   location?: string; // e.g., city or address
@@ -75,6 +76,7 @@ export interface Location {
   address: string;
   census_block: string;
   country: string;
+  cross_street: string;
   dma: string;
   formatted_address: string;
   locality: string;
@@ -82,13 +84,24 @@ export interface Location {
   region: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  icon?: {
+    prefix: string;
+    suffix: string;
+  };
+}
+
 export interface Venue {
   id: string;
   fsq_id?: string; // Foursquare ID
   createdAt: Timestamp; // Timestamp for when the venue was created
   location: Location;
+  categories?: Category[];
   name: string; // Name of the venue
 }
+export type FSQVenue = Omit<Venue, "id">;
 export interface User {
   id: string;
   idToken?: string; // Firebase UID
