@@ -1,10 +1,5 @@
 import { DocumentReference, getDoc } from "firebase/firestore";
-
-// Define ResponseData type
-export type ResponseData<T> = {
-  success: boolean;
-  data: T & { id: string };
-};
+import { ResponseData } from "../schema";
 
 export const getDataFromRef = async <T>(
   ref: DocumentReference<T>

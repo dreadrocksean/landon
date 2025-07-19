@@ -1,5 +1,11 @@
 import { DocumentReference, Timestamp } from "firebase/firestore";
 
+// Define ResponseData type
+export type ResponseData<T> = {
+  success: boolean;
+  error?: string;
+  data: T & { id: string };
+};
 export interface Artist {
   id: string;
   name: string;

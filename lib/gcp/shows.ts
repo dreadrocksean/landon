@@ -18,27 +18,9 @@ import {
   limit,
   orderBy,
 } from "firebase/firestore";
-import { Artist, FirestoreShow, Show, Venue } from "@/lib/schema";
+import { Artist, FirestoreShow, ResponseData, Show, Venue } from "@/lib/schema";
 import { createVenue, getVenueByRef } from "./venues";
-import Time from "react-datepicker/dist/time";
 import { getDataFromRef } from "./general";
-
-/* export const createShow = async ({
-  show,
-  artistId,
-}: {
-  show: Show;
-  artistId: string;
-}): Promise<void> => {
-  const showsRef = collection(
-    db,
-    `artists/${artistId}/shows`
-  ) as CollectionReference<Show, Show>;
-  await setDoc(doc(showsRef, show.id), {
-    ...show,
-    createdAt: serverTimestamp(),
-  });
-}; */
 
 export const createShow = async ({
   artistId,
@@ -49,10 +31,10 @@ export const createShow = async ({
 }: {
   artistId: string;
   venue: Venue;
-  scheduledStart: string;
-  scheduledStop: string;
+  scheduledStart: Timestamp;
+  scheduledStop: Timestamp;
   [key: string]: any;
-}): Promise<Show> => {
+}): Promise<ResponseData<FirestoreShow>> => {
   let venueRef: DocumentReference<Venue> | null = null;
   const artistRef = doc(db, `artists`, artistId) as DocumentReference<Artist>;
   try {
@@ -76,10 +58,8 @@ export const createShow = async ({
       venue = { ...venue, id: snap.docs[0].id };
     }
     const now = new Date().getTime();
-    const live = new Date(scheduledStart).getTime() <= now;
+    const live = scheduledStart.toMillis() <= now;
     const createdAt = Timestamp.fromMillis(now);
-    const start = Timestamp.fromDate(new Date(scheduledStart));
-    const stop = Timestamp.fromDate(new Date(scheduledStop));
 
     const showRef = await addDoc<FirestoreShow, FirestoreShow>(
       collection(artistRef, "shows") as CollectionReference<
@@ -88,8 +68,8 @@ export const createShow = async ({
       >,
       {
         createdAt,
-        scheduledStart: start,
-        scheduledStop: stop,
+        scheduledStart,
+        scheduledStop,
         venueId: venue.id,
         venueRef,
         ...rest,
@@ -99,10 +79,10 @@ export const createShow = async ({
     await updateDoc(artistRef, {
       live,
       currShowId: showRef.id,
-      scheduledStart: start,
-      scheduledStop: stop,
+      scheduledStart,
+      scheduledStop,
     });
-    return Promise.resolve(showRes.data);
+    return Promise.resolve(showRes);
   } catch (err) {
     console.log("🚀 ~ err:", err);
     return Promise.reject(err);

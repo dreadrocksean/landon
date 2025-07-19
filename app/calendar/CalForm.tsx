@@ -13,6 +13,7 @@ import useShows from "@/hooks/useShows";
 import "@/styles/calendar-form.css";
 
 import { Venue, FirestoreShow } from "@/lib/schema";
+import { createShow } from "@/lib/gcp/shows";
 
 export interface VenueCategory {
   icon: { prefix: string; suffix: string };
@@ -168,15 +169,26 @@ export const CalForm = () => {
         }
       }
 
-      if (form.title && form.scheduledStart && form.scheduledStop) {
+      if (
+        form.title &&
+        form.scheduledStart &&
+        form.scheduledStop &&
+        form.venue
+      ) {
         try {
-          const response = await fetch("/api/calendar", {
+          /* const response = await fetch("/api/calendar", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ...form, artistId }),
-          });
+          }); */
 
-          const data = await response.json();
+          const data = await createShow({
+            artistId,
+            venue: form.venue,
+            scheduledStart: form.scheduledStart,
+            scheduledStop: form.scheduledStop,
+            title: form.title,
+          });
 
           if (data.success) {
             setForm(initForm);
@@ -187,6 +199,7 @@ export const CalForm = () => {
           }
         } catch (error) {
           alert("Failed to save show.");
+          console.error("Error saving show:", error);
         }
       }
     },
