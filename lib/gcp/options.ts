@@ -23,11 +23,8 @@ export const firebaseConfig: FirebaseOptions = {
 
 export const serviceAccount: ServiceAccount = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-  privateKey: process.env.NEXT_PUBLIC_FIREBASE_PRIVATE_KEY!.replace(
-    /\\n/g,
-    "\n"
-  ),
-  clientEmail: process.env.NEXT_PUBLIC_FIREBASE_CLIENT_EMAIL!,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
   // clientId: "104427249681064068693",
   // authUri: "https://accounts.google.com/o/oauth2/auth",
   // tokenUri: "https://oauth2.googleapis.com/token",

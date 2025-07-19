@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore, Timestamp } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
 import { createShow } from "@/lib/gcp/shows";
-import { createVenue } from "@/lib/gcp/venues";
 import "@/lib/gcp/admin"; // initialize admin SDK
 
-import { Show } from "@/lib/schema";
+import { Show, Venue } from "@/lib/schema";
 
 const db = getFirestore();
 
@@ -13,12 +11,8 @@ interface CreateShowBody {
   title: string;
   scheduledStart: string;
   scheduledStop: string;
-  venue: any;
+  venue: Venue;
   artistId: string;
-}
-
-interface DeleteShowBody {
-  id: string;
 }
 
 // GET: fetch all shows
