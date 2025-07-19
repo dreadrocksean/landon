@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestore } from "firebase-admin/firestore";
 import { createShow } from "@/lib/gcp/shows";
-import "@/lib/gcp/admin"; // initialize admin SDK
+console.log("🚀 ~ createShow:", createShow);
+import "@/server/admin"; // initialize admin SDK
 
 import { Show, Venue } from "@/lib/schema";
 
