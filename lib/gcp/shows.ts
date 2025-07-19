@@ -158,6 +158,8 @@ export const getShowsByArtistId = async ({
   const q = query(showsRef, orderBy("scheduledStop", "desc"), limit(10));
   try {
     setIsLoading(true);
+    console.log("Fetching shows for artist ID:", artistId);
+
     const snap = await getDocs(q);
 
     const showsPromises = snap.docs.map(async (doc): Promise<Show> => {

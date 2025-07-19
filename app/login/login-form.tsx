@@ -16,7 +16,6 @@ const LoginForm = () => {
 
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  console.log("🚀 ~ LoginForm ~ isAuthenticated:", isAuthenticated);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -29,7 +28,6 @@ const LoginForm = () => {
   const handleLogin = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      console.log("🚀 ~ LoginForm ~ handleLogin:");
       setLoading(true);
       setError("");
       try {
@@ -38,7 +36,6 @@ const LoginForm = () => {
           email,
           password
         );
-        console.log("🚀 ~ userCred:", userCred);
         if (isAuthenticated) {
           alert("Logged in successfully");
         }

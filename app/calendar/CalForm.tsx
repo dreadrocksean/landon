@@ -89,7 +89,6 @@ const initForm: Form = {
 export const CalForm = () => {
   const { shows, addShow, removeShow, artist, isLoading, error } = useShows();
   const { isAuthenticated } = useAuth();
-  console.log("🚀 ~ CalForm ~ isAuthenticated:", isAuthenticated);
   const router = useRouter();
   const [form, setForm] = useState<Form>({
     title: initForm.title,
@@ -138,7 +137,6 @@ export const CalForm = () => {
   );
 
   useEffect(() => {
-    console.log("🚀 ~ useEffect ~ venueInput:", venueInput);
     if (
       (venueInput?.trim() ?? "").length > 2 &&
       city &&
