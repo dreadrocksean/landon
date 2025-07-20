@@ -79,7 +79,7 @@ export const feature: Feature = {
 export const shows: Show[] = [
   {
     id: 1 as unknown as string,
-    venue: "Murphy's Corner",
+    venueName: "Murphy's Corner",
     showTitle: "St. Pattie's Morning Show",
     //image: "/img/landon/15.jpg",
     showStatus: "free",
@@ -91,7 +91,7 @@ export const shows: Show[] = [
   },
   {
     id: 2 as unknown as string,
-    venue: "Jerry's Bait Shop",
+    venueName: "Jerry's Bait Shop",
     showTitle: "Jerry's Pre Jam",
     //image: "/img/landon/8.jpg",
     showStatus: "cancelled",
@@ -103,7 +103,7 @@ export const shows: Show[] = [
   },
   {
     id: 3 as unknown as string,
-    venue: "Jerry's Bait Shop",
+    venueName: "Jerry's Bait Shop",
     showTitle: "Pre Jam Show",
     //image: "/img/landon/9.jpg",
     showStatus: "free",
@@ -115,7 +115,7 @@ export const shows: Show[] = [
   },
   {
     id: 4 as unknown as string,
-    venue: "Murphy's Corner",
+    venueName: "Murphy's Corner",
     showTitle: "Brunch with Landon",
     //image: "/img/landon/11.jpg",
     showStatus: "free",
@@ -127,7 +127,7 @@ export const shows: Show[] = [
   },
   {
     id: 5 as unknown as string,
-    venue: "Murphy's Corner",
+    venueName: "Murphy's Corner",
     showTitle: "Sunday Funday",
     //image: "/img/landon/12.jpg",
     showStatus: "free",
@@ -139,7 +139,7 @@ export const shows: Show[] = [
   },
   {
     id: 6 as unknown as string,
-    venue: "Murphy's Corner",
+    venueName: "Murphy's Corner",
     showTitle: "Friday Night Live",
     //image: "/img/landon/13.jpg",
     scheduledStart: Timestamp.fromDate(new Date("2025-04-18T19:00:00-05:00")),
@@ -150,7 +150,7 @@ export const shows: Show[] = [
   },
   {
     id: 7 as unknown as string,
-    venue: "Murphy's Corner",
+    venueName: "Murphy's Corner",
     showTitle: "Brunch with Landon",
     //image: "/img/landon/14.jpg",
     showStatus: "free",
@@ -162,7 +162,7 @@ export const shows: Show[] = [
   },
   {
     id: 8 as unknown as string,
-    venue: "Jerry's Bait Shop",
+    venueName: "Jerry's Bait Shop",
     showTitle: "Pre Jam Show",
     //image: "/img/landon/9.jpg",
     showStatus: "free",
@@ -174,7 +174,7 @@ export const shows: Show[] = [
   },
   {
     id: 9 as unknown as string,
-    venue: "Murphy's Corner",
+    venueName: "Murphy's Corner",
     showTitle: "Mothers Day Brunch",
     //image: "/img/landon/15.jpg",
     showStatus: "cancelled",
@@ -187,7 +187,7 @@ export const shows: Show[] = [
   },
   {
     id: 10 as unknown as string,
-    venue: "Murphy's Corner",
+    venueName: "Murphy's Corner",
     showTitle: "Friday Night Live",
     //image: "/img/landon/15.jpg",
     showStatus: "free",
