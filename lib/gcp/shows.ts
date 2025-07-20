@@ -18,7 +18,14 @@ import {
   limit,
   orderBy,
 } from "firebase/firestore";
-import { Artist, FirestoreShow, ResponseData, Show, Venue } from "@/lib/schema";
+import {
+  Artist,
+  FirestoreShow,
+  FSQVenue,
+  ResponseData,
+  Show,
+  Venue,
+} from "@/lib/schema";
 import { createVenue, getVenueByRef } from "./venues";
 import { getDataFromRef } from "./general";
 
@@ -30,17 +37,18 @@ export const createShow = async ({
   ...rest
 }: {
   artistId: string;
-  venue: Venue;
+  venue: FSQVenue;
   scheduledStart: Timestamp;
   scheduledStop: Timestamp;
   [key: string]: any;
 }): Promise<ResponseData<FirestoreShow>> => {
-  let venueRef: DocumentReference<Venue> | null = null;
+  let venueRef: DocumentReference<FSQVenue> | null = null;
+  let newVenue: Venue | null = null;
   const artistRef = doc(db, `artists`, artistId) as DocumentReference<Artist>;
   try {
     if (!venue) throw new Error("Venue required to create show");
     const queryVenue = query(
-      collection(db, "venues") as CollectionReference<Venue, Venue>,
+      collection(db, "venues") as CollectionReference<FSQVenue, FSQVenue>,
       where("name", "==", venue.name)
     );
     const snap = await getDocs(queryVenue);
@@ -48,14 +56,14 @@ export const createShow = async ({
       console.log("Venue not found, creating new venue");
       venueRef = await createVenue(venue);
       console.log("Created new venue:", venueRef.id);
-      venue = { ...venue, id: venueRef.id };
+      newVenue = { ...venue, id: venueRef.id };
     } else {
       console.log("Found existing venue:", snap.docs[0].id);
       venueRef = doc(db, "venues", snap.docs[0].id) as DocumentReference<
-        Venue,
-        Venue
+        FSQVenue,
+        FSQVenue
       >;
-      venue = { ...venue, id: snap.docs[0].id };
+      newVenue = { ...venue, id: snap.docs[0].id };
     }
     const now = new Date().getTime();
     const live = scheduledStart.toMillis() <= now;
@@ -70,9 +78,9 @@ export const createShow = async ({
         createdAt,
         scheduledStart,
         scheduledStop,
-        venueId: venue.id,
+        venueId: newVenue.id,
         venueRef,
-        venueName: venue.name,
+        venueName: newVenue.name,
         ...rest,
       }
     );

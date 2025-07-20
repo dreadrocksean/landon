@@ -14,14 +14,17 @@ import {
   DocumentReference,
   addDoc,
 } from "firebase/firestore";
-import { Venue } from "@/lib/schema";
+import { FSQVenue, Venue } from "@/lib/schema";
 
-const venuesRef = collection(db, "venues") as CollectionReference<Venue, Venue>;
+const venuesRef = collection(db, "venues") as CollectionReference<
+  FSQVenue,
+  FSQVenue
+>;
 
 export const createVenue = async (
-  venue: Venue
-): Promise<DocumentReference<Venue, Venue>> =>
-  await addDoc<Venue, Venue>(venuesRef, {
+  venue: FSQVenue
+): Promise<DocumentReference<FSQVenue, FSQVenue>> =>
+  await addDoc<FSQVenue, FSQVenue>(venuesRef, {
     ...venue,
     createdAt: serverTimestamp(),
   });
@@ -61,7 +64,7 @@ export const getVenueByRef = async ({
 };
 
 export const listVenues = async (): Promise<Venue[]> => {
-  const snap = await getDocs<Venue, Venue>(venuesRef);
+  const snap = await getDocs<FSQVenue, FSQVenue>(venuesRef);
   return snap.docs.map((doc) => ({ ...doc.data(), id: doc.id } as Venue));
 };
 
