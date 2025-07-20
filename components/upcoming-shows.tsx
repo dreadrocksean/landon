@@ -123,7 +123,10 @@ const UpcomingShows = () => {
 
                 {!cancelled && (
                   <Image
-                    src={show.image ?? "/img/home/placeholder.png"}
+                    src={
+                      show.image ??
+                      `/img/landon/${Math.floor(Math.random() * 25) + 1}.jpg`
+                    }
                     className={twMerge(
                       "absolute  scale-0 group-hover:scale-100 left-1/3  duration-500 transition-all top-5 md:top-[-40px] rotate-0  w-[13rem] h-[17rem] object-cover",
                       isRTL
