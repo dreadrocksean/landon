@@ -54,8 +54,8 @@ const MobileMenu: React.FC = () => {
           <FocusLock returnFocus={true}>
             <div className="fixed inset-0 p-4">
               <div onClick={close} className="backdrop" />
-              <div className="drawer bg-white ">
-                <div>
+              <div className="drawer">
+                <div className="drawer-content">
                   <ul className="flex pl-1 uppercase font-kumbhSans flex-col text-bg-overly gap-4 py-4 font-medium overflow-auto text-xl">
                     {(navigationLinks as NavigationLink[]).map(
                       (item) =>

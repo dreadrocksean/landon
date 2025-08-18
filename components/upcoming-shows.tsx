@@ -83,12 +83,13 @@ const UpcomingShows = () => {
               stop: show.scheduledStop,
             });
             const cancelled = show.showStatus === "cancelled";
+            const passed = show.scheduledStop.seconds < Date.now() / 1000;
 
             return (
               <div
                 key={show.id}
                 className={`${
-                  cancelled ? "disabled" : ""
+                  cancelled || passed ? "disabled" : ""
                 } flex gap-4 flex-col md:flex-row group transition-all relative isolate py-8 items-center justify-between`}
               >
                 <div className="flex flex-col md:flex-row items-center gap-6 md:gap-16">
