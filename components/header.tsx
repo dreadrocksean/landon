@@ -24,7 +24,11 @@ type NavigationLink = {
   auth?: boolean;
 };
 
-const Header: React.FC = () => {
+type Props = {
+  image?: string;
+};
+
+const Header: React.FC<Props> = ({ image }) => {
   const scrollPosition = useScroll();
   const isScroll = scrollPosition.y > 50;
   const { isAuthenticated } = useAuth();
@@ -42,7 +46,7 @@ const Header: React.FC = () => {
         className="logo text-xl md:text-2xl leading-snug font-bold"
         href="/"
       >
-        <img src="/img/landon/logo.jpg" alt="logo" />
+        <img src={image} alt="logo" />
       </Link>
       <ul className="hidden lg:flex items-center font-medium gap-8 lg:gap-12 uppercase">
         {/* <li>

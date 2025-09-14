@@ -20,7 +20,14 @@ interface FeatureData {
   about: string;
 }
 
-const Featured: React.FC = () => {
+type Props = {
+  name: string;
+  header: string;
+  bio: string;
+  more?: string;
+};
+
+const Featured: React.FC<Props> = ({ name, header, bio, more }) => {
   const [showMore, setShowMore] = useState<boolean>(false);
 
   const videoUrl: string =
@@ -31,26 +38,19 @@ const Featured: React.FC = () => {
     setShowMore(!showMore);
   };
 
-  const renderShowMore = () =>
-    !showMore ? (
-      <div onClick={toggleMore} className="cursor-pointer">
-        <div className="font-medium text-rose hover:text-white duration-300 transition-all ease-linear">
-          MORE ABOUT LANDON &gt;
-        </div>
+  const renderShowMore = () => (
+    <div onClick={toggleMore} className="cursor-pointer">
+      <div className="font-medium text-rose hover:text-white duration-300 transition-all ease-linear">
+        {showMore ? "LESS" : "MORE"} ABOUT {name.toUpperCase()} &gt;
       </div>
-    ) : (
-      <div onClick={toggleMore} className="cursor-pointer">
-        <div className="font-medium text-rose hover:text-white duration-300 transition-all ease-linear">
-          LESS ABOUT LANDON &gt;
-        </div>
-      </div>
-    );
+    </div>
+  );
 
-  const featureData: FeatureData = feature;
-  const heading: string = featureData.heading;
-  const words: string[] = heading.split(" ");
-  const ln1: string = words?.slice(0, words.length / 2).join(" ");
-  const ln2: string = words?.slice(words.length / 2).join(" ");
+  // const featureData: FeatureData = feature;
+  // const heading: string = featureData.heading;
+  // const words: string[] = heading.split(" ");
+  // const ln1: string = words?.slice(0, words.length / 2).join(" ");
+  // const ln2: string = words?.slice(words.length / 2).join(" ");
 
   return (
     <section
@@ -61,11 +61,11 @@ const Featured: React.FC = () => {
       <Container>
         <div className="relative py-section z-20 flex flex-col lg:flex-row gap-20 lg:items-center px-container">
           <div data-aos="fade-up" className="flex-1 text-center lg:text-start ">
-            <h2>{heading}</h2>
+            <h2>{header}</h2>
             <p className="more text-cyan mx-auto lg:mx-0 mt-10 mb-12 max-w-[533px]">
-              {featureData.about}
+              {bio}
             </p>
-            {renderShowMore()}
+            {more && renderShowMore()}
           </div>
           <div data-aos="fade-up" className="flex-1 relative isolate">
             {!play && (
@@ -103,7 +103,7 @@ const Featured: React.FC = () => {
             data-aos="fade-up"
             className="more relative z-20 lg:items-center px-container"
           >
-            <MoreFeatured />
+            <MoreFeatured text={more} />
             {renderShowMore()}
           </div>
         )}

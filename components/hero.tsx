@@ -5,15 +5,27 @@ import "@/styles/hero.css";
 
 interface HeroProps {
   basic?: boolean;
+  title?: string;
+  artistName?: string;
+  image?: string;
 }
 
-const Hero: React.FC<HeroProps> = ({ basic = false }) => (
+const init = {
+  title: "CHECKOUT KC'S NEWEST PHENOMENON",
+  artistName: "Landon",
+};
+
+const Hero: React.FC<HeroProps> = ({
+  artistName = init.artistName,
+  title = init.title,
+  basic = false,
+}) => (
   <section
     className={`${
       !basic ? "min-h-screen " : "short-hero "
     }relative isolate bg-hero bg-cover bg-no-repeat py-10`}
   >
-    <div className="bg-hero-text z-10 absolute inset-0 md:top-1/4 left-[10%] right-[10%] bg-center bg-contain bg-no-repeat"></div>
+    <div className="z-10 absolute inset-0 md:top-1/4 left-[10%] right-[10%] bg-center bg-contain bg-no-repeat"></div>
 
     <div className="absolute z-20 inset-0 bg-bg-overly bg-opacity-20"></div>
 
@@ -24,11 +36,11 @@ const Hero: React.FC<HeroProps> = ({ basic = false }) => (
             data-aos="fade-up"
             className="hero-text text-7xl sm:text-9xl md:text-[160px] lg:text-[180px] uppercase text-center leading-snug md:leading-[160px] font-bold my-20 sm:my-32 md:my-60"
           >
-            LANDON
+            {artistName.toUpperCase()}
           </h1>
           <div className="flex flex-col lg:flex-row gap-10 items-center justify-between">
             <p className="text-base text-center lg:text-start font-medium uppercase">
-              CHECKOUT KC'S NEWEST PHENOMENON
+              {title.toUpperCase()}
             </p>
             <div className="trigger animate-bounce">
               <a href="#featured_music" className="">

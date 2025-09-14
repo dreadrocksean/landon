@@ -88,7 +88,7 @@ const initForm: Form = {
 
 export const CalForm = () => {
   const { shows, addShow, removeShow, artist, isLoading, error } = useShows();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState<Form>({
     title: initForm.title,
@@ -106,12 +106,10 @@ export const CalForm = () => {
   const artistId = artist?.id ?? "";
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!loading && !isAuthenticated) {
       router.push("/login");
-    } else {
-      router.push("/calendar");
     }
-  }, [isAuthenticated]);
+  }, [loading, isAuthenticated, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });

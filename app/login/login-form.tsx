@@ -15,16 +15,13 @@ const LoginForm = () => {
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!authLoading && isAuthenticated) {
       router.push("/calendar");
-    } else {
-      router.push("/login");
     }
-  }, [isAuthenticated, router]);
-
+  }, [authLoading, isAuthenticated, router]);
   const handleLogin = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
