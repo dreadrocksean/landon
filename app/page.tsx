@@ -26,11 +26,15 @@ interface HomeProps {
 }
 
 const Home: FC<HomeProps> = async ({ artist, webpage, shows }: HomeProps) => {
-  const imageUrls = await Promise.all(
-    webpage?.imageGallery?.map(async (path: string) => getURL(path, artist.id))
-  );
+  const imageUrls = webpage?.imageGallery?.length
+    ? await Promise.all(
+        webpage?.imageGallery?.map(async (path: string) =>
+          getURL(path, artist.id)
+        )
+      )
+    : [];
 
-  return (
+  return artist ? (
     <main className="bg-bg-dark text-white text-base">
       <Header image={artist.imageURL} />
       <Hero
@@ -47,6 +51,8 @@ const Home: FC<HomeProps> = async ({ artist, webpage, shows }: HomeProps) => {
       <FeaturedGrid images={imageUrls} />
       <Footer />
     </main>
+  ) : (
+    <h2>Artist not found</h2>
   );
 };
 

@@ -12,7 +12,7 @@ import {
   Query,
   query,
 } from "firebase/firestore";
-import { Artist, Show, User, Webpage } from "@/lib/schema";
+import { Artist, Show, User, Venue, Webpage } from "@/lib/schema";
 
 const artistsRef = collection(db, "artists") as CollectionReference<
   Artist,
@@ -39,7 +39,25 @@ export const getShowsByArtistId = async ({
   const q: Query<Show> = query(showsRef);
   try {
     const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Show));
+    const shows = snap.docs.map(
+      (doc) => ({ ...doc.data(), id: doc.id } as Show)
+    );
+    const showsWithVenues = await Promise.all(
+      shows.map(async (show) => {
+        if (show.venueRef) {
+          // const venueRef = doc(db, "venues", show.venueId);
+          const venueSnap = await getDoc(show.venueRef);
+          if (venueSnap.exists()) {
+            // Ensure the returned venue matches the Venue type
+            const venueData = venueSnap.data();
+            const venue = { id: venueSnap.id, ...venueData } as Venue;
+            return { ...show, venue };
+          }
+        }
+        return show;
+      })
+    );
+    return showsWithVenues;
   } catch (error) {
     console.error("Error fetching shows by artist ID:", error);
     throw new Error(

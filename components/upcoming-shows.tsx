@@ -84,7 +84,7 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
               stop: show.scheduledStop,
             });
             const cancelled = show.showStatus === "cancelled";
-            const passed = show.scheduledStop.seconds < Date.now() / 1000;
+            const passed = show.scheduledStop.toMillis() < Date.now();
 
             return (
               <div
@@ -119,7 +119,10 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
                         : "transition-all duration-300 ease-linear group-hover:text-rose"
                     }  text-center md:text-start md:line-clamp-1`}
                   >
-                    {show.showTitle ?? show.title ?? ""}
+                    {(show.venue?.location.formatted_address ||
+                      show.showTitle) ??
+                      show.title ??
+                      ""}
                   </h4>
                 </div>
 
