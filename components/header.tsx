@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-import { navigationLinks } from "@/utils/constants";
+import { getNavigationLinks } from "@/utils/constants";
 import Link from "next/link";
 import {
   FaFacebookF,
@@ -16,19 +16,14 @@ import { twMerge } from "tailwind-merge";
 import MobileMenu from "./mobile-menu";
 import FlyoutLink, { homeLinks } from "./Dropdown/FlyoutLink";
 import "@/styles/header.css";
-
-type NavigationLink = {
-  id: string | number;
-  title: string;
-  route: string;
-  auth?: boolean;
-};
+import { NavigationLink } from "@/lib/schema";
 
 type Props = {
   image?: string;
+  navigationLinks: NavigationLink[];
 };
 
-const Header: React.FC<Props> = ({ image }) => {
+const Header: React.FC<Props> = ({ image, navigationLinks }) => {
   const scrollPosition = useScroll();
   const isScroll = scrollPosition.y > 50;
   const { isAuthenticated } = useAuth();
@@ -90,7 +85,7 @@ const Header: React.FC<Props> = ({ image }) => {
           </Link>
         </div> */}
         <div className="block lg:hidden">
-          <MobileMenu />
+          <MobileMenu navigationLinks={navigationLinks} />
         </div>
       </div>
     </nav>

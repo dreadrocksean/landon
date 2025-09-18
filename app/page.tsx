@@ -11,7 +11,7 @@ import FeaturedGrid from "@/components/featured-grid";
 // import LatestBlogs from "@/components/latest-blogs";
 import Footer from "@/components/footer";
 import { ref, getDownloadURL } from "firebase/storage";
-import { Artist, Show, Webpage } from "@/lib/schema";
+import { Artist, NavigationLink, Show, User, Webpage } from "@/lib/schema";
 import { storage } from "@/lib/gcp/client";
 
 const getURL = async (path: string, artistId: string) => {
@@ -23,9 +23,19 @@ interface HomeProps {
   artist: Artist;
   webpage: Webpage;
   shows?: Show[];
+  user: User;
+  navigationLinks: NavigationLink[];
 }
 
-const Home: FC<HomeProps> = async ({ artist, webpage, shows }: HomeProps) => {
+const Home: FC<HomeProps> = async ({
+  artist,
+  webpage,
+  shows,
+  user,
+  navigationLinks,
+}: HomeProps) => {
+  console.log("🚀 ~ Home ~ user:", user);
+  console.log("🚀 ~ Home ~ webpage:", webpage);
   const imageUrls = webpage?.imageGallery?.length
     ? await Promise.all(
         webpage?.imageGallery?.map(async (path: string) =>
@@ -36,20 +46,21 @@ const Home: FC<HomeProps> = async ({ artist, webpage, shows }: HomeProps) => {
 
   return artist ? (
     <main className="bg-bg-dark text-white text-base">
-      <Header image={artist.imageURL} />
+      <Header image={artist.imageURL} navigationLinks={navigationLinks} />
       <Hero
         artistName={webpage.heroTitle}
         title={artist.bioTitle || "Bio"}
-        image={artist.imageURL}
+        image={webpage.heroBg}
       />
       <Featured
         header={webpage.bioHeader}
         bio={artist.bio || ""}
         name={webpage.heroTitle}
+        videoUrl={webpage.featuredVideoUrl}
       />
       <UpcomingShows shows={shows} />
       <FeaturedGrid images={imageUrls} />
-      <Footer />
+      <Footer tel={webpage.tel} email={webpage.email} fname={user.fname} />
     </main>
   ) : (
     <h2>Artist not found</h2>

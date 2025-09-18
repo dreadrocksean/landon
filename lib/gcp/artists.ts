@@ -11,6 +11,7 @@ import {
   where,
   Query,
   query,
+  DocumentReference,
 } from "firebase/firestore";
 import { Artist, Show, User, Venue, Webpage } from "@/lib/schema";
 
@@ -74,10 +75,10 @@ export const getWebpageById = async ({
   id: string;
 }): Promise<Webpage | null> => {
   try {
-    const docRef = doc(db, "webpages", id);
+    const docRef = doc(db, "webpages", id) as DocumentReference<Webpage>;
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
+      return { ...docSnap.data(), id: docSnap.id };
     } else {
       return null;
     }
@@ -133,6 +134,25 @@ export const getArtistByUserId = async ({
       error instanceof Error
         ? error.message
         : `Error fetching artist by user ID: ${userId}`
+    );
+  }
+};
+
+export const getUserById = async (id: string): Promise<User | null> => {
+  try {
+    const docRef = doc(db, "users", id) as DocumentReference<User>;
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { ...docSnap.data(), id: docSnap.id };
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching user by ID:", error);
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : `Error fetching user by ID: ${id}`
     );
   }
 };

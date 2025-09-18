@@ -25,13 +25,15 @@ type Props = {
   header: string;
   bio: string;
   more?: string;
+  videoUrl?: string;
 };
 
-const Featured: React.FC<Props> = ({ name, header, bio, more }) => {
+const Featured: React.FC<Props> = ({ name, header, bio, more, videoUrl }) => {
+  console.log("🚀 ~ Featured ~ videoUrl:", videoUrl);
   const [showMore, setShowMore] = useState<boolean>(false);
 
-  const videoUrl: string =
-    "https://www.youtube.com/embed/6a6TYM3-0EA?si=F2TY-Wcs69c587I6";
+  // const videoUrl: string = "https://youtu.be/ugGp9SsJmb0";
+  // "https://www.youtube.com/embed/6a6TYM3-0EA?si=F2TY-Wcs69c587I6";
   const [play, setPlay] = useState<boolean>(false);
 
   const toggleMore = (): void => {
@@ -67,36 +69,38 @@ const Featured: React.FC<Props> = ({ name, header, bio, more }) => {
             </p>
             {more && renderShowMore()}
           </div>
-          <div data-aos="fade-up" className="flex-1 relative isolate">
-            {!play && (
-              <div className="absolute pointer-events-none inset-0 flex flex-col justify-center items-center pt-10">
-                <div className="cursor-pointer w-20 h-20 rounded-full bg-gradient-to-r from-pink-500 text-xl grid place-content-center to-purple-600 mb-[-30px]">
-                  <CiPlay1 />
+          {videoUrl && (
+            <div data-aos="fade-up" className="flex-1 relative isolate">
+              {!play && (
+                <div className="absolute pointer-events-none inset-0 flex flex-col justify-center items-center pt-10">
+                  <div className="cursor-pointer w-20 h-20 rounded-full bg-gradient-to-r from-pink-500 text-xl grid place-content-center to-purple-600 mb-[-30px]">
+                    <CiPlay1 />
+                  </div>
+                  <Image
+                    src={"/img/home/WATCH.png"}
+                    width={242}
+                    height={95}
+                    alt=""
+                  />
                 </div>
-                <Image
-                  src={"/img/home/WATCH.png"}
-                  width={242}
-                  height={95}
-                  alt=""
+              )}
+              <div className="flex justify-center">
+                <LazyReactPlayer
+                  url={videoUrl}
+                  style={{ maxWidth: "640px" }}
+                  width="100%"
+                  height="540px"
+                  controls
+                  onPlay={() => {
+                    setPlay(true);
+                  }}
+                  onPause={() => {
+                    setPlay(false);
+                  }}
                 />
               </div>
-            )}
-            <div className="flex justify-center">
-              <LazyReactPlayer
-                url={videoUrl}
-                style={{ maxWidth: "640px" }}
-                width="100%"
-                height="540px"
-                controls
-                onPlay={() => {
-                  setPlay(true);
-                }}
-                onPause={() => {
-                  setPlay(false);
-                }}
-              />
             </div>
-          </div>
+          )}
         </div>
         {showMore && (
           <div

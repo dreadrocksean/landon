@@ -1,10 +1,26 @@
-import React from "react";
+import React, { FC } from "react";
 import Container from "./container";
 import Link from "next/link";
 import { ReactNode, AnchorHTMLAttributes } from "react";
 
+const formatTel = (tel?: string) => {
+  if (!tel) return "";
+  const cleaned = ("" + tel).replace(/\D/g, "");
+  const match = cleaned.match(/^(\d{1,3})(\d{3})(\d{4})$/);
+  if (match) {
+    return `(${match[1]}) ${match[2]}-${match[3]}`;
+  }
+  return tel; // If no match, return the original input
+};
+
+type Props = {
+  tel?: string;
+  email?: string;
+  fname?: string;
+};
+
 //method call
-const Footer: React.FC = () => {
+const Footer: FC<Props> = ({ tel, email, fname }) => {
   return (
     <div className="relative bg-footer bg-cover bg-no-repeat">
       <div className="absolute z-10 inset-0 bg-bg-overly bg-opacity-85"></div>
@@ -98,11 +114,11 @@ const Footer: React.FC = () => {
         </div>*/}
         <div className="py-5 border-t flex-col md:flex-row font-bold text-center md:text-start gap-2 border-cyan flex justify-center md:justify-between">
           <div>
-            <div>Book Landon Today! (913) 680-9050</div>
             <div>
-              <a href="mailto:adrian@bartholomusic.com">
-                adrian@bartholomusic.com
-              </a>
+              Book {fname} Today! {formatTel(tel)}
+            </div>
+            <div>
+              <a href={`mailto:${email}`}>{email}</a>
             </div>
           </div>
           <div>Site is Powered by Dreadrock Software ©2022 </div>

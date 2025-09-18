@@ -10,17 +10,14 @@ import { IoClose } from "react-icons/io5";
 import useAuth from "@/hooks/useAuth";
 import useKey from "@/hooks/useKey";
 // Navigation links data
-import { navigationLinks } from "@/utils/constants";
+import { getNavigationLinks } from "@/utils/constants";
+import { NavigationLink } from "@/lib/schema";
 
-// Define the type for navigationLinks items
-type NavigationLink = {
-  id: string | number;
-  title: string;
-  route: string;
-  auth?: boolean;
+type Props = {
+  navigationLinks: NavigationLink[];
 };
 
-const MobileMenu: React.FC = () => {
+const MobileMenu: React.FC<Props> = ({ navigationLinks }) => {
   const { isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 

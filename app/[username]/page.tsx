@@ -6,7 +6,9 @@ import {
   getAllArtists,
   getWebpageById,
   getShowsByArtistId,
+  getUserById,
 } from "@/lib/gcp/artists";
+import { getNavigationLinks } from "@/utils/constants";
 
 interface ArtistPageProps {
   params: { username: string };
@@ -14,11 +16,17 @@ interface ArtistPageProps {
 
 export const generateStaticParams = async () => {
   const artists = await getAllArtists();
-  return artists.map((a) => ({ username: a.webRoute })).filter(Boolean);
+  const routes = artists.map((a) => ({ username: a.webRoute })).filter(Boolean);
+  return [
+    ...routes,
+    { username: "kurtcaldwell" },
+    { username: "adrianbartholomew" },
+  ];
 };
 
 const ArtistPage = async ({ params }: ArtistPageProps) => {
   const { username } = params;
+  const navigationLinks = getNavigationLinks(username);
 
   const [artist, webpage] = await Promise.all([
     getArtistByWebRoute({ webRoute: username }),
@@ -27,9 +35,16 @@ const ArtistPage = async ({ params }: ArtistPageProps) => {
   const shows = (await getShowsByArtistId({ artistId: artist?.id || "" })).sort(
     (a, b) => b.scheduledStart.toMillis() - a.scheduledStart.toMillis()
   );
+  const user = await getUserById(artist?.userId || "");
 
-  return artist && webpage ? (
-    <Page artist={artist} webpage={webpage} shows={shows} />
+  return artist && webpage && user ? (
+    <Page
+      artist={artist}
+      webpage={webpage}
+      shows={shows}
+      user={user}
+      navigationLinks={navigationLinks}
+    />
   ) : (
     notFound()
   );

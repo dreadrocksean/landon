@@ -10,6 +10,7 @@ export type ResponseData<T> = {
 export type Webpage = {
   id: string;
   imageGallery: string[];
+  featuredVideoUrl?: string;
   artistId: string;
   bioHeader: string;
   heroBg: string;
@@ -17,6 +18,7 @@ export type Webpage = {
   heroTitle: string;
   profilePicUrl: string;
   tel: string;
+  email: string;
 };
 export type Artist = {
   id: string;
@@ -135,7 +137,17 @@ export type FSQVenue = Omit<Venue, "id">;
 export type User = {
   id: string;
   idToken?: string; // Firebase UID
+  fname: string;
+  lname: string;
   email: string;
+  tel?: string;
   createdAt: Timestamp;
   roleId: number;
+};
+// Define the type for navigationLinks items
+export type NavigationLink = {
+  id: string | number;
+  title: string;
+  route: string;
+  auth?: boolean;
 };
