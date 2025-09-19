@@ -22,6 +22,7 @@ const getURL = async (path: string, artistId: string) => {
 interface HomeProps {
   artist: Artist;
   webpage: Webpage;
+  imageGallery: string[];
   shows?: Show[];
   user: User;
   navigationLinks: NavigationLink[];
@@ -30,10 +31,12 @@ interface HomeProps {
 const Home: FC<HomeProps> = async ({
   artist,
   webpage,
+  imageGallery,
   shows,
   user,
   navigationLinks,
 }: HomeProps) => {
+  // console.log("🚀 ~ Home ~ imageGallery:", imageGallery);
   const imageUrls = webpage?.imageGallery?.length
     ? await Promise.all(
         webpage?.imageGallery?.map(async (path: string) =>
@@ -57,7 +60,7 @@ const Home: FC<HomeProps> = async ({
         videoUrl={webpage.featuredVideoUrl}
       />
       <UpcomingShows shows={shows} />
-      <FeaturedGrid images={imageUrls} />
+      <FeaturedGrid images={imageGallery} />
       <Footer tel={webpage.tel} email={webpage.email} fname={user.fname} />
     </main>
   ) : (

@@ -7,6 +7,7 @@ import {
   getWebpageById,
   getShowsByArtistId,
   getUserById,
+  getImageGalleryByArtistId,
 } from "@/lib/gcp/artists";
 import { getNavigationLinks } from "@/utils/constants";
 
@@ -32,15 +33,24 @@ const ArtistPage = async ({ params }: ArtistPageProps) => {
     getArtistByWebRoute({ webRoute: username }),
     getWebpageById({ id: username }),
   ]);
-  const shows = (await getShowsByArtistId({ artistId: artist?.id || "" })).sort(
+
+  const [user, showsUnsorted, imageGallery] = await Promise.all([
+    getUserById(artist?.userId || ""),
+    getShowsByArtistId({ artistId: artist?.id || "" }),
+    getImageGalleryByArtistId({ artistId: artist?.id || "" }),
+  ]);
+
+  if (!artist || !webpage || !user) return notFound();
+
+  const shows = showsUnsorted?.sort(
     (a, b) => b.scheduledStart.toMillis() - a.scheduledStart.toMillis()
   );
-  const user = await getUserById(artist?.userId || "");
 
   return artist && webpage && user ? (
     <Page
       artist={artist}
       webpage={webpage}
+      imageGallery={imageGallery}
       shows={shows}
       user={user}
       navigationLinks={navigationLinks}

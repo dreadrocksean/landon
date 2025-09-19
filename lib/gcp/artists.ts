@@ -15,6 +15,9 @@ import {
 } from "firebase/firestore";
 import { Artist, Show, User, Venue, Webpage } from "@/lib/schema";
 
+import { ref, listAll, getDownloadURL } from "firebase/storage";
+import { storage } from "./client";
+
 const artistsRef = collection(db, "artists") as CollectionReference<
   Artist,
   Artist
@@ -26,6 +29,32 @@ export const createArtist = async (artist: Artist): Promise<void> => {
     ...artist,
     createdAt: serverTimestamp(),
   });
+};
+
+/**
+ * Get all gallery image URLs for a given artistId.
+ */
+export const getImageGalleryByArtistId = async ({
+  artistId,
+}: {
+  artistId: string;
+}): Promise<string[]> => {
+  try {
+    const galleryRef = ref(storage, `artists/${artistId}/webpage/imageGallery`);
+
+    // List all files in the gallery folder
+    const result = await listAll(galleryRef);
+
+    // Map each file reference to its download URL
+    const urls = await Promise.all(
+      result.items.map((itemRef) => getDownloadURL(itemRef))
+    );
+
+    return urls;
+  } catch (err) {
+    console.error("Error fetching image gallery:", err);
+    return [];
+  }
 };
 
 export const getShowsByArtistId = async ({
