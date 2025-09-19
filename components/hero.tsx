@@ -33,7 +33,10 @@ const Hero: React.FC<HeroProps> = ({
         backgroundImage: `url(${image})`,
       }}
     >
-      <div className="z-10 absolute inset-0 md:top-1/4 left-[10%] right-[10%] bg-center bg-contain bg-no-repeat"></div>
+      <div
+        className="z-10 absolute inset-0 md:top-1/4 left-[0%] right-[0%] bg-center bg-contain bg-no-repeat"
+        style={{ backgroundColor: "#110127aa" }}
+      ></div>
 
       <div className="absolute z-20 inset-0 bg-bg-overly bg-opacity-20"></div>
 

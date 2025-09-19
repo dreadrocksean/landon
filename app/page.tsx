@@ -34,8 +34,6 @@ const Home: FC<HomeProps> = async ({
   user,
   navigationLinks,
 }: HomeProps) => {
-  console.log("🚀 ~ Home ~ user:", user);
-  console.log("🚀 ~ Home ~ webpage:", webpage);
   const imageUrls = webpage?.imageGallery?.length
     ? await Promise.all(
         webpage?.imageGallery?.map(async (path: string) =>

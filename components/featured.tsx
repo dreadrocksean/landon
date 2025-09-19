@@ -29,11 +29,8 @@ type Props = {
 };
 
 const Featured: React.FC<Props> = ({ name, header, bio, more, videoUrl }) => {
-  console.log("🚀 ~ Featured ~ videoUrl:", videoUrl);
   const [showMore, setShowMore] = useState<boolean>(false);
 
-  // const videoUrl: string = "https://youtu.be/ugGp9SsJmb0";
-  // "https://www.youtube.com/embed/6a6TYM3-0EA?si=F2TY-Wcs69c587I6";
   const [play, setPlay] = useState<boolean>(false);
 
   const toggleMore = (): void => {
