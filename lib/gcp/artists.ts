@@ -39,7 +39,6 @@ export const getImageGalleryByArtistId = async ({
 }: {
   artistId: string;
 }): Promise<string[]> => {
-  console.log("🚀 ~ getImageGalleryByArtistId ~ artistId:", artistId);
   try {
     const galleryRef = ref(
       storage,
@@ -49,11 +48,13 @@ export const getImageGalleryByArtistId = async ({
     // List all files in the gallery folder
     const result = await listAll(galleryRef);
 
-    // Map each file reference to its download URL
+    // Map each file reference to its download URL with cache-busting
     const urls = await Promise.all(
-      result.items.map((itemRef) => getDownloadURL(itemRef))
+      result.items.map(async (itemRef) => {
+        const url = await getDownloadURL(itemRef);
+        return `${url}?t=${Date.now()}`; // force browser to fetch fresh image
+      })
     );
-    console.log("🚀 ~ getImageGalleryByArtistId ~ urls:", urls);
 
     return urls;
   } catch (err) {
