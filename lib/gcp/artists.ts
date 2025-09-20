@@ -39,8 +39,12 @@ export const getImageGalleryByArtistId = async ({
 }: {
   artistId: string;
 }): Promise<string[]> => {
+  console.log("🚀 ~ getImageGalleryByArtistId ~ artistId:", artistId);
   try {
-    const galleryRef = ref(storage, `artists/${artistId}/webpage/imageGallery`);
+    const galleryRef = ref(
+      storage,
+      `artists/${artistId}/webpage/imageGallery/small`
+    );
 
     // List all files in the gallery folder
     const result = await listAll(galleryRef);
@@ -49,6 +53,7 @@ export const getImageGalleryByArtistId = async ({
     const urls = await Promise.all(
       result.items.map((itemRef) => getDownloadURL(itemRef))
     );
+    console.log("🚀 ~ getImageGalleryByArtistId ~ urls:", urls);
 
     return urls;
   } catch (err) {
