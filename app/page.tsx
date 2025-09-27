@@ -36,14 +36,6 @@ const Home: FC<HomeProps> = async ({
   user,
   navigationLinks,
 }: HomeProps) => {
-  const imageUrls = webpage?.imageGallery?.length
-    ? await Promise.all(
-        webpage?.imageGallery?.map(async (path: string) =>
-          getURL(path, artist.id)
-        )
-      )
-    : [];
-
   return artist ? (
     <main className="bg-bg-dark text-white text-base">
       <Header image={artist.imageURL} navigationLinks={navigationLinks} />

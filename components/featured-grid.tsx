@@ -9,7 +9,7 @@ const FeaturedGrid: FC<Props> = ({ images }) =>
   images?.length ? (
     <section
       id="gallery"
-      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      className="gap-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
     >
       {images.map((url, index) => (
         <div key={index} className="relative h-[480px] sm:h-96 lg:h-[520px]">

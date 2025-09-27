@@ -40,6 +40,7 @@ const ArtistPage = async ({ params }: ArtistPageProps) => {
     getImageGalleryByArtistId({ artistId: artist?.id || "" }),
   ]);
 
+  console.log("🚀 ~ ArtistPage ~ artist:", artist?.imageURL);
   if (!artist || !webpage || !user) return notFound();
 
   const shows = showsUnsorted?.sort(
