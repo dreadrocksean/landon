@@ -128,12 +128,4 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-<<<<<<< HEAD
 .DS_Store
-=======
-
-#Misc
-.DS_Store
-.idea/
-.vscode/
->>>>>>> generic-site
