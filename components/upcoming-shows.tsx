@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -53,23 +51,26 @@ const getScheduleFromTimestamps = ({
   };
 };
 
-// const getSchedule = (
-//   date: string | number | Date,
-//   duration: number
-// ): Schedule => {
-//   const start = new Date(date);
-//   const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
+const getSchedule = (
+  date: string | number | Date,
+  duration: number
+): Schedule => {
+  const start = new Date(date);
+  const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
 
-//   return {
-//     start: parseDate(start),
-//     end: parseDate(end),
-//   };
-// };
+  return {
+    start: parseDate(start),
+    end: parseDate(end),
+  };
+};
 
-const UpcomingShows = () => {
-  const { isRTL } = useLayout();
-  const { shows }: { shows: Show[] } = useShows();
+type Props = {
+  shows: Show[] | undefined | null;
+};
 
+const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
+  // const { isRTL } = useLayout();
+  if (!shows || shows.length === 0) return null;
   return (
     <div id="shows" className="bg-bg-dark">
       <Container className="py-section">
@@ -83,7 +84,7 @@ const UpcomingShows = () => {
               stop: show.scheduledStop,
             });
             const cancelled = show.showStatus === "cancelled";
-            const passed = show.scheduledStop.seconds < Date.now() / 1000;
+            const passed = show.scheduledStop.toMillis() < Date.now();
 
             return (
               <div
@@ -118,7 +119,10 @@ const UpcomingShows = () => {
                         : "transition-all duration-300 ease-linear group-hover:text-rose"
                     }  text-center md:text-start md:line-clamp-1`}
                   >
-                    {show.showTitle ?? show.title ?? ""}
+                    {(show.venue?.location.formatted_address ||
+                      show.showTitle) ??
+                      show.title ??
+                      ""}
                   </h4>
                 </div>
 
@@ -130,9 +134,7 @@ const UpcomingShows = () => {
                     }
                     className={twMerge(
                       "absolute  scale-0 group-hover:scale-100 left-1/3  duration-500 transition-all top-5 md:top-[-40px] rotate-0  w-[13rem] h-[17rem] object-cover",
-                      isRTL
-                        ? "md:right-2/3 group-hover:-rotate-45"
-                        : "md:left-2/3 group-hover:rotate-45"
+                      "md:left-2/3 group-hover:rotate-45"
                     )}
                     width={220}
                     height={195}

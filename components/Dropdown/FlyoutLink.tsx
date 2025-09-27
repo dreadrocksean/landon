@@ -9,12 +9,7 @@ export interface FlyoutLinkItem {
 }
 
 export const pageLinks: FlyoutLinkItem[] = [{ label: "about", href: "/about" }];
-export const homeLinks: FlyoutLinkItem[] = [
-  { label: "home", href: "/" },
-  // { label: "home 2", href: "/home-2" },
-  // { label: "home 3", href: "/home-3" },
-  // { label: "home 4", href: "/home-4" },
-];
+export const homeLinks: FlyoutLinkItem[] = [{ label: "home", href: "/" }];
 
 interface FlyoutLinkProps {
   children: ReactNode;

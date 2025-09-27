@@ -6,7 +6,21 @@ export type ResponseData<T> = {
   error?: string;
   data: T & { id: string };
 };
-export interface Artist {
+
+export type Webpage = {
+  id: string;
+  imageGallery: string[];
+  featuredVideoUrl?: string;
+  artistId: string;
+  bioHeader: string;
+  heroBg: string;
+  heroText: string;
+  heroTitle: string;
+  profilePicUrl: string;
+  tel: string;
+  email: string;
+};
+export type Artist = {
   id: string;
   name: string;
   email?: string;
@@ -27,27 +41,45 @@ export interface Artist {
   website?: string; // Personal or band website
   genres?: string[]; // Array of genres the artist is associated with
   isActive?: boolean; // Whether the artist is currently active
-}
+  webRoute?: string; // Unique web route for the artist's page
+  active: boolean;
+  currentSongId?: string;
+  fuzzySearchArray?: string[];
+  genre?: string;
+  imageURL?: string;
+  members?: string[];
+  roles?: string[];
+  scheduledStart?: Timestamp;
+  scheduledStop?: Timestamp;
+  setBreaks?: string[];
+  showLyrics?: boolean;
+  showTips?: boolean;
+  type?: "solo" | "group";
+  userId?: string;
+  userIds?: string[];
+  voteTime?: number;
+  bioTitle?: string;
+};
 
-export interface BaseShow {
+export type BaseShow = {
   createdAt: Timestamp; // Timestamp when the show was created
   scheduledStart: Timestamp; // Start time of the show
   scheduledStop: Timestamp; // End time of the show
   showTitle?: string;
   title?: string;
   showStatus?: "free" | "cancelled" | "confirmed";
-}
+};
 
-export interface FirestoreShow extends BaseShow {
+export type FirestoreShow = BaseShow & {
   venueId?: string; // Reference to the venue
   venueRef?: DocumentReference; // Reference to the venue document
   venueName?: string; // Name of the venue
   doorFee?: number; // in USD
   artistFee?: number; // in USD
   totalTips?: number; // Total tips received for the show
-}
+};
 
-export interface Show extends FirestoreShow {
+export type Show = FirestoreShow & {
   id: string; // Document ID in Firestore
   venue?: Venue; // Full venue object
   date?: Date;
@@ -56,9 +88,9 @@ export interface Show extends FirestoreShow {
   image?: string; // URL
   //   totalTips?: number; // Total tips received for the show
   //   entranceFee?: number; // in USD
-}
+};
 
-export interface Place {
+export type Place = {
   id: string;
   name: string;
   address: string;
@@ -71,8 +103,8 @@ export interface Place {
   website?: string; // Venue website
   capacity?: number; // Maximum capacity of the venue
   createdAt: Timestamp; // ISO date string for when the venue was created
-}
-export interface Location {
+};
+export type Location = {
   address: string;
   census_block: string;
   country: string;
@@ -82,30 +114,40 @@ export interface Location {
   locality: string;
   postcode: string;
   region: string;
-}
+};
 
-export interface Category {
+export type Category = {
   id: string;
   name: string;
   icon?: {
     prefix: string;
     suffix: string;
   };
-}
+};
 
-export interface Venue {
+export type Venue = {
   id: string;
   fsq_id?: string; // Foursquare ID
   createdAt: Timestamp; // Timestamp for when the venue was created
   location: Location;
   categories?: Category[];
   name: string; // Name of the venue
-}
+};
 export type FSQVenue = Omit<Venue, "id">;
-export interface User {
+export type User = {
   id: string;
   idToken?: string; // Firebase UID
+  fname: string;
+  lname: string;
   email: string;
+  tel?: string;
   createdAt: Timestamp;
   roleId: number;
-}
+};
+// Define the type for navigationLinks items
+export type NavigationLink = {
+  id: string | number;
+  title: string;
+  route: string;
+  auth?: boolean;
+};
