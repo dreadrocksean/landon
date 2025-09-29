@@ -17,16 +17,18 @@ import MobileMenu from "./mobile-menu";
 import FlyoutLink, { homeLinks } from "./Dropdown/FlyoutLink";
 import "@/styles/header.css";
 import { NavigationLink } from "@/lib/schema";
+import { useStore } from "@/store/useStore";
 
 type Props = {
   image?: string;
-  navigationLinks: NavigationLink[];
 };
 
-const Header: React.FC<Props> = ({ image, navigationLinks }) => {
+const Header: React.FC<Props> = ({ image }) => {
   const scrollPosition = useScroll();
   const isScroll = scrollPosition.y > 50;
   const { isAuthenticated } = useAuth();
+  const webRoute = useStore((state) => state.webRoute);
+  const navigationLinks = getNavigationLinks(webRoute);
 
   return (
     <nav
@@ -39,7 +41,7 @@ const Header: React.FC<Props> = ({ image, navigationLinks }) => {
     >
       <Link
         className="logo text-xl md:text-2xl leading-snug font-bold"
-        href="/"
+        href={`/${webRoute}`}
       >
         <img src={image} alt="logo" />
       </Link>

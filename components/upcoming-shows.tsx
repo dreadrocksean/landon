@@ -9,7 +9,8 @@ import { useLayout } from "@/app/LayoutProvider";
 import { twMerge } from "tailwind-merge";
 
 import "@/styles/shows.css";
-import { Show } from "@/lib/schema";
+import { ClientShow, Show } from "@/lib/schema";
+import { Timestamp } from "firebase/firestore";
 
 type Schedule = {
   start: {
@@ -40,11 +41,11 @@ const getScheduleFromTimestamps = ({
   start,
   stop,
 }: {
-  start: { toDate: () => Date };
-  stop: { toDate: () => Date };
+  start: number;
+  stop: number;
 }): Schedule => {
-  const startDate = start.toDate();
-  const endDate = stop.toDate();
+  const startDate = Timestamp.fromMillis(start).toDate();
+  const endDate = Timestamp.fromMillis(stop).toDate();
   return {
     start: parseDate(startDate),
     end: parseDate(endDate),
@@ -65,12 +66,13 @@ const getSchedule = (
 };
 
 type Props = {
-  shows: Show[] | undefined | null;
+  shows: ClientShow[] | undefined | null;
 };
 
 const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
   // const { isRTL } = useLayout();
-  if (!shows || shows.length === 0) return null;
+  if (!shows?.length) return null;
+  // console.log("🚀 ~ UpcomingShows ~ shows:", shows[0]);
   return (
     <div id="shows" className="bg-bg-dark">
       <Container className="py-section">
@@ -84,7 +86,7 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
               stop: show.scheduledStop,
             });
             const cancelled = show.showStatus === "cancelled";
-            const passed = show.scheduledStop.toMillis() < Date.now();
+            const passed = show.scheduledStop < Date.now();
 
             return (
               <div

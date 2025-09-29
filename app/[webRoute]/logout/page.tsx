@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import useAuth from "@/hooks/useAuth";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/gcp/client";
+import { useStore } from "@/store/useStore";
 
 const Login: React.FC = () => {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const webRoute = useStore((state) => state.webRoute);
 
   useEffect(() => {
     signOut(auth);
@@ -16,9 +18,9 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push("/calendar");
+      router.push(`/${webRoute}/calendar`);
     } else {
-      router.push("/login");
+      router.push(`/${webRoute}/login`);
     }
   }, [router, isAuthenticated]);
 

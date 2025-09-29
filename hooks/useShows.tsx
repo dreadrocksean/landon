@@ -3,9 +3,8 @@ import { user as userData } from "@/data/data";
 import { getArtistByUserId } from "@/lib/gcp/artists";
 import { getUserByEmail } from "@/lib/gcp/users";
 import { getShowsByArtistId, deleteShow } from "@/lib/gcp/shows";
-import { User, Artist, Show } from "@/lib/schema";
+import { User, Artist, Show, Form } from "@/lib/schema";
 import { createShow } from "@/lib/gcp/shows";
-import { Form } from "@/app/calendar/CalForm";
 
 export type UseShowsReturn = {
   shows: Show[];

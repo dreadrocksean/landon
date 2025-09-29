@@ -1,6 +1,6 @@
+"use client";
+
 import React, { FC, use } from "react";
-import Header from "@/components/header";
-import Hero from "@/components/hero";
 import Featured from "@/components/featured";
 import UpcomingShows from "@/components/upcoming-shows";
 // import NewestAlbums from "@/components/newest-albums";
@@ -9,41 +9,26 @@ import FeaturedGrid from "@/components/featured-grid";
 // import Members from "@/components/members";
 // import Testimonials from "@/components/testimonials";
 // import LatestBlogs from "@/components/latest-blogs";
-import Footer from "@/components/footer";
 import { ref, getDownloadURL } from "firebase/storage";
-import { Artist, NavigationLink, Show, User, Webpage } from "@/lib/schema";
+import { Artist, Show, Webpage } from "@/lib/schema";
 import { storage } from "@/lib/gcp/client";
 
-const getURL = async (path: string, artistId: string) => {
-  const imageRef = ref(storage, `artists/${artistId}/imageGallery/${path}`);
-  return await getDownloadURL(imageRef);
-};
+import { useStore } from "@/store/useStore";
 
-interface HomeProps {
-  artist: Artist;
-  webpage: Webpage;
-  imageGallery: string[];
-  shows?: Show[];
-  user: User;
-  navigationLinks: NavigationLink[];
-}
+// const getURL = async (path: string, artistId: string) => {
+//   const imageRef = ref(storage, `artists/${artistId}/imageGallery/${path}`);
+//   return await getDownloadURL(imageRef);
+// };
 
-const Home: FC<HomeProps> = async ({
-  artist,
-  webpage,
-  imageGallery,
-  shows,
-  user,
-  navigationLinks,
-}: HomeProps) => {
-  return artist ? (
-    <main className="bg-bg-dark text-white text-base">
-      <Header image={artist.imageURL} navigationLinks={navigationLinks} />
-      <Hero
-        artistName={webpage.heroTitle}
-        title={artist.bioTitle || "Bio"}
-        image={webpage.heroBg}
-      />
+const Home: FC = () => {
+  const shows = useStore((state) => state.shows);
+  // console.log("🚀 ~ Home ~ shows:", shows[0]);
+  const imageGallery = useStore((state) => state.imageGallery);
+  const artist = useStore((state) => state.artist);
+  const webpage = useStore((state) => state.webpage);
+
+  return artist && webpage ? (
+    <>
       <Featured
         header={webpage.bioHeader}
         bio={artist.bio || ""}
@@ -52,8 +37,7 @@ const Home: FC<HomeProps> = async ({
       />
       <UpcomingShows shows={shows} />
       <FeaturedGrid images={imageGallery} />
-      <Footer tel={webpage.tel} email={webpage.email} fname={user.fname} />
-    </main>
+    </>
   ) : (
     <h2>Artist not found</h2>
   );

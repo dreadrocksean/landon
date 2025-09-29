@@ -25,31 +25,27 @@ export const metadata = {
 };
 
 // ✅ Required RootLayout type
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body
-        className={twMerge(
-          spaceGrotesk.className,
-          dMSans.variable,
-          kumbhSans.variable,
-          pacifico.variable,
-          poppins.variable
-        )}
-      >
-        <AnimationProvider>
-          <LayoutProvider>
-            <>
-              <Settings />
-              {children}
-            </>
-          </LayoutProvider>
-        </AnimationProvider>
-      </body>
-    </html>
-  );
-}
+const RootLayout = ({ children }: { children: React.ReactNode }) => (
+  <html lang="en">
+    <body
+      className={twMerge(
+        spaceGrotesk.className,
+        dMSans.variable,
+        kumbhSans.variable,
+        pacifico.variable,
+        poppins.variable
+      )}
+    >
+      <AnimationProvider>
+        <LayoutProvider>
+          <>
+            <Settings />
+            {children}
+          </>
+        </LayoutProvider>
+      </AnimationProvider>
+    </body>
+  </html>
+);
+
+export default RootLayout;

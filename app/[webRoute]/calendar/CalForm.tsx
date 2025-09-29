@@ -5,14 +5,13 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { getLocalISOString } from "@/utils/date";
 
+import { getLocalISOString } from "@/utils/date";
 import useAuth from "@/hooks/useAuth";
 import useShows from "@/hooks/useShows";
+import { Venue, FirestoreShow, FSQVenue, Form } from "@/lib/schema";
 
 import "@/styles/calendar-form.css";
-
-import { Venue, FirestoreShow, FSQVenue } from "@/lib/schema";
 
 const foursquare = {
   CLIENT_ID: "QFMSNEWT5412BKBVIGV3HBAJYHZ2RXXYXQ2U0AWS2OGX01IA",
@@ -51,15 +50,6 @@ const fetchVenues = async ({
 const localSchedule = {
   start: getLocalISOString(new Date()),
   end: getLocalISOString(new Date(Date.now() + 4 * 60 * 60 * 1000)),
-};
-
-export type Form = Omit<
-  FirestoreShow,
-  "id" | "createdAt" | "scheduledStart" | "scheduledStop"
-> & {
-  venue?: FSQVenue;
-  scheduledStart?: Timestamp;
-  scheduledStop?: Timestamp;
 };
 
 type Field = {
@@ -135,26 +125,29 @@ export const CalForm = () => {
   );
 
   useEffect(() => {
-    if (
-      (venueInput?.trim() ?? "").length > 2 &&
-      city &&
-      state &&
-      !venueSuggestionSelected
-    ) {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(async () => {
-        const near = `${city}, ${state}`;
-        const venues = await fetchVenues({ query: venueInput!, near });
+    const getVenues = async () => {
+      if (
+        (venueInput?.trim() ?? "").length > 2 &&
+        city &&
+        state &&
+        !venueSuggestionSelected
+      ) {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(async () => {
+          const near = `${city}, ${state}`;
+          const venues = await fetchVenues({ query: venueInput!, near });
 
-        if (venues.length === 1) {
-          handleVenueSelect(venues[0]);
-        } else {
-          setVenueSuggestions(venues);
-        }
-      }, 300);
-    } else {
-      setVenueSuggestions([]);
-    }
+          if (venues.length === 1) {
+            handleVenueSelect(venues[0]);
+          } else {
+            setVenueSuggestions(venues);
+          }
+        }, 300);
+      } else {
+        setVenueSuggestions([]);
+      }
+    };
+    getVenues();
   }, [venueInput, city, state]);
 
   const handleSubmit = useCallback(

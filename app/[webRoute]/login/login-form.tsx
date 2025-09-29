@@ -22,6 +22,7 @@ const LoginForm = () => {
       router.push("/calendar");
     }
   }, [authLoading, isAuthenticated, router]);
+
   const handleLogin = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();

@@ -6,7 +6,10 @@ const nextConfig = {
     unoptimized: true, // Disables the default behavior of optimizing images with the next/image component
     // disableStaticImages: true, // Disable the default image optimization
   },
-  output: "export",
+  // output: "export",
+  output: undefined, // disable static export
+  reactStrictMode: true,
 };
 
 export default nextConfig;
+// module.exports = nextConfig;

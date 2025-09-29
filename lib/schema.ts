@@ -7,6 +7,15 @@ export type ResponseData<T> = {
   data: T & { id: string };
 };
 
+export type Form = Omit<
+  FirestoreShow,
+  "id" | "createdAt" | "scheduledStart" | "scheduledStop"
+> & {
+  venue?: FSQVenue;
+  scheduledStart?: Timestamp;
+  scheduledStop?: Timestamp;
+};
+
 export type Webpage = {
   id: string;
   imageGallery: string[];
@@ -19,6 +28,7 @@ export type Webpage = {
   profilePicUrl: string;
   tel: string;
   email: string;
+  createdAt: Timestamp;
 };
 export type Artist = {
   id: string;
@@ -61,10 +71,19 @@ export type Artist = {
   bioTitle?: string;
 };
 
+export type ClientArtist = Omit<Artist, "createdAt"> & {
+  createdAt: number; // in milliseconds
+};
+
+export type ClientWebpage = Omit<Webpage, "createdAt"> & {
+  createdAt: number; // in milliseconds
+};
+
 export type BaseShow = {
   createdAt: Timestamp; // Timestamp when the show was created
   scheduledStart: Timestamp; // Start time of the show
   scheduledStop: Timestamp; // End time of the show
+  endTime?: Timestamp; // deprecated
   showTitle?: string;
   title?: string;
   showStatus?: "free" | "cancelled" | "confirmed";
@@ -88,6 +107,16 @@ export type Show = FirestoreShow & {
   image?: string; // URL
   //   totalTips?: number; // Total tips received for the show
   //   entranceFee?: number; // in USD
+};
+
+export type ClientShow = Omit<
+  Show,
+  "scheduledStart" | "scheduledStop" | "createdAt" | "venue"
+> & {
+  scheduledStart: number; // in milliseconds
+  scheduledStop: number; // in milliseconds
+  createdAt: number; // in milliseconds
+  venue: ClientVenue;
 };
 
 export type Place = {
@@ -134,6 +163,10 @@ export type Venue = {
   name: string; // Name of the venue
 };
 export type FSQVenue = Omit<Venue, "id">;
+export type ClientVenue = Omit<Venue, "createdAt"> & {
+  createdAt: number; // in milliseconds
+};
+
 export type User = {
   id: string;
   idToken?: string; // Firebase UID
@@ -144,6 +177,11 @@ export type User = {
   createdAt: Timestamp;
   roleId: number;
 };
+
+export type ClientUser = Omit<User, "createdAt"> & {
+  createdAt: number; // in milliseconds
+};
+
 // Define the type for navigationLinks items
 export type NavigationLink = {
   id: string | number;

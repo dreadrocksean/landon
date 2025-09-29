@@ -6,13 +6,12 @@ import Header from "@/components/header";
 import Hero from "@/components/hero";
 import Footer from "@/components/footer";
 
-const Calendar: FC = () => (
-  <main className="bg-bg-dark text-white text-base">
-    <Header />
-    <Hero basic={true} />
-    <CalForm />
-    <Footer />
-  </main>
-);
+const Calendar: FC = () => {
+  return (
+    <main className="bg-bg-dark text-white text-base">
+      <CalForm />
+    </main>
+  );
+};
 
 export default Calendar;

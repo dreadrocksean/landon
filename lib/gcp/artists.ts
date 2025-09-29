@@ -37,8 +37,9 @@ export const createArtist = async (artist: Artist): Promise<void> => {
 export const getImageGalleryByArtistId = async ({
   artistId,
 }: {
-  artistId: string;
+  artistId?: string;
 }): Promise<string[]> => {
+  if (!artistId) return [];
   try {
     const galleryRef = ref(
       storage,
@@ -66,8 +67,9 @@ export const getImageGalleryByArtistId = async ({
 export const getShowsByArtistId = async ({
   artistId,
 }: {
-  artistId: string;
+  artistId?: string;
 }): Promise<Show[]> => {
+  if (!artistId) return [];
   const showsRef = collection(
     db,
     `artists/${artistId}/shows`
@@ -132,6 +134,7 @@ export const getArtistByWebRoute = async ({
 }: {
   webRoute: string;
 }): Promise<Artist | null> => {
+  console.log("🚀 ~ getArtistByWebRoute ~ webRoute:", webRoute);
   const q = query(collection(db, "artists"), where("webRoute", "==", webRoute));
   try {
     const snap = await getDocs(q);
@@ -173,7 +176,8 @@ export const getArtistByUserId = async ({
   }
 };
 
-export const getUserById = async (id: string): Promise<User | null> => {
+export const getUserById = async (id: string = ""): Promise<User | null> => {
+  if (!id) return null;
   try {
     const docRef = doc(db, "users", id) as DocumentReference<User>;
     const docSnap = await getDoc(docRef);
