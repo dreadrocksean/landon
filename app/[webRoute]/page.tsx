@@ -3,6 +3,6 @@
 import React from "react";
 import Page from "../page";
 
-const ArtistPage = async () => <Page />;
+const ArtistPage = () => <Page />;
 
 export default ArtistPage;

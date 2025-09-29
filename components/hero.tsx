@@ -34,7 +34,7 @@ const Hero: React.FC<HeroProps> = ({
       }}
     >
       <div
-        className="z-10 absolute inset-0 md:top-1/4 left-[0%] right-[0%] bg-center bg-contain bg-no-repeat"
+        className="z-10 absolute inset-0 left-[0%] right-[0%] bg-center bg-contain bg-no-repeat"
         style={{ backgroundColor: "#110127aa" }}
       ></div>
 
