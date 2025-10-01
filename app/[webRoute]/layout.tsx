@@ -64,7 +64,6 @@ const WebRouteLayout = async ({ children, params }: WebRouteLayoutProps) => {
     getShowsByArtistId({ artistId: artist.id }),
     getImageGalleryByArtistId({ artistId: artist.id }),
   ]);
-  //   console.log("🚀 ~ WebRouteLayout ~ shows:", shows);
 
   if (!user) return notFound();
 
@@ -85,6 +84,8 @@ const WebRouteLayout = async ({ children, params }: WebRouteLayoutProps) => {
   const serializeArtist = (artist: Artist) => ({
     ...artist,
     createdAt: artist.createdAt.toMillis(),
+    scheduledStart: artist.scheduledStart?.toMillis() || null,
+    scheduledStop: artist.scheduledStop?.toMillis() || null,
   });
 
   const serializeWebpage = (webpage: Webpage) => ({
