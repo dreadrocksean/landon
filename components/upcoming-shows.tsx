@@ -70,9 +70,7 @@ type Props = {
 };
 
 const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
-  // const { isRTL } = useLayout();
   if (!shows?.length) return null;
-  // console.log("🚀 ~ UpcomingShows ~ shows:", shows[0]);
   return (
     <div id="shows" className="bg-bg-dark">
       <Container className="py-section">
@@ -128,7 +126,7 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
                   </h4>
                 </div>
 
-                {!cancelled && (
+                {/* !cancelled && (
                   <Image
                     src={
                       show.image ??
@@ -142,7 +140,7 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
                     height={195}
                     alt={show.showTitle ?? show.title ?? "Show Image"}
                   />
-                )}
+                ) */}
                 {cancelled ? (
                   <span className="cancelled">CANCELLED</span>
                 ) : (
