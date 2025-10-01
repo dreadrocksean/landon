@@ -121,7 +121,7 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
                         : "transition-all duration-300 ease-linear group-hover:text-rose"
                     }  text-center md:text-start md:line-clamp-1`}
                   >
-                    {(show.venue?.location.formatted_address ||
+                    {(show.venue?.location?.formatted_address ||
                       show.showTitle) ??
                       show.title ??
                       ""}
