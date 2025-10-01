@@ -1,6 +1,8 @@
 // app/[webRoute]/layout.tsx
 import React from "react";
 import { notFound } from "next/navigation";
+import { Metadata } from "next";
+
 import {
   getArtistByWebRoute,
   getWebpageById,
@@ -9,12 +11,43 @@ import {
   getImageGalleryByArtistId,
 } from "@/lib/gcp/artists";
 import ClientWebRouteLayout from "./ClientWebRouteLayout"; // client wrapper
-import { Artist, FirestoreShow, Show, User, Webpage } from "@/lib/schema";
-import { create } from "zustand";
+import { Artist, Show, User, Webpage } from "@/lib/schema";
 
 interface WebRouteLayoutProps {
   children: React.ReactNode;
   params: { webRoute: string };
+}
+
+// ✅ This runs before rendering to set <head> tags
+export async function generateMetadata({
+  params,
+}: {
+  params: { webRoute: string };
+}): Promise<Metadata> {
+  const webRoute = params.webRoute;
+
+  const [artist, webpage] = await Promise.all([
+    getArtistByWebRoute({ webRoute }),
+    getWebpageById({ id: webRoute }),
+  ]);
+
+  if (!artist || !webpage) return {};
+
+  return {
+    title: `${artist.name ?? "Music Page"}`,
+    description: webpage.heroText ?? "Discover live music",
+    openGraph: {
+      title: `${artist.name ?? "Music Page"}`,
+      description: webpage.bioHeader ?? "Discover live music",
+      images: artist.imageURL ? [artist.imageURL] : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: artist.name,
+      description: webpage.bioHeader ?? "Discover live music",
+      images: artist.imageURL ? [artist.imageURL] : [],
+    },
+  };
 }
 
 const WebRouteLayout = async ({ children, params }: WebRouteLayoutProps) => {
