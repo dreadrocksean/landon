@@ -10,18 +10,18 @@ interface HeroProps {
   image?: string;
 }
 
-const init = {
+/* const init = {
   title: "CHECKOUT KC'S NEWEST PHENOMENON",
   artistName: "Landon",
   image: "/img/home/home-hero-bg-2.jpg",
   basic: false,
-};
+}; */
 
 const Hero: React.FC<HeroProps> = ({
-  artistName = init.artistName,
-  title = init.title,
-  basic = init.basic,
-  image = init.image,
+  artistName /* = init.artistName */,
+  title /* = init.title */,
+  basic /* = init.basic */,
+  image /* = init.image */,
 }) => (
   <section
     className={`${
@@ -45,11 +45,11 @@ const Hero: React.FC<HeroProps> = ({
             data-aos="fade-up"
             className="hero-text text-7xl sm:text-9xl md:text-[160px] lg:text-[180px] uppercase text-center leading-snug md:leading-[160px] font-bold my-20 sm:my-32 md:my-60"
           >
-            {artistName.toUpperCase()}
+            {artistName?.toUpperCase()}
           </h1>
           <div className="flex flex-col lg:flex-row gap-10 items-center justify-between">
             <p className="text-base text-center lg:text-start font-medium uppercase">
-              {title.toUpperCase()}
+              {title?.toUpperCase()}
             </p>
             <div className="trigger animate-bounce">
               <a href="#featured_music" className="">
