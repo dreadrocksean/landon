@@ -52,19 +52,6 @@ const getScheduleFromTimestamps = ({
   };
 };
 
-const getSchedule = (
-  date: string | number | Date,
-  duration: number
-): Schedule => {
-  const start = new Date(date);
-  const end = new Date(start.getTime() + duration * 60 * 60 * 1000);
-
-  return {
-    start: parseDate(start),
-    end: parseDate(end),
-  };
-};
-
 type Props = {
   shows: ClientShow[] | undefined | null;
 };
@@ -126,21 +113,6 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
                   </h4>
                 </div>
 
-                {/* !cancelled && (
-                  <Image
-                    src={
-                      show.image ??
-                      `/img/landon/${Math.floor(Math.random() * 25) + 1}.jpg`
-                    }
-                    className={twMerge(
-                      "absolute  scale-0 group-hover:scale-100 left-1/3  duration-500 transition-all top-5 md:top-[-40px] rotate-0  w-[13rem] h-[17rem] object-cover",
-                      "md:left-2/3 group-hover:rotate-45"
-                    )}
-                    width={220}
-                    height={195}
-                    alt={show.showTitle ?? show.title ?? "Show Image"}
-                  />
-                ) */}
                 {cancelled ? (
                   <span className="cancelled">CANCELLED</span>
                 ) : (

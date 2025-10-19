@@ -12,6 +12,7 @@ import {
   Query,
   query,
   DocumentReference,
+  orderBy,
 } from "firebase/firestore";
 import { Artist, Show, User, Venue, Webpage } from "@/lib/schema";
 
@@ -74,7 +75,13 @@ export const getShowsByArtistId = async ({
     db,
     `artists/${artistId}/shows`
   ) as CollectionReference<Show>;
-  const q: Query<Show> = query(showsRef);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const q: Query<Show> = query(
+    showsRef,
+    where("scheduledStart", ">=", today),
+    orderBy("scheduledStart", "asc")
+  );
   try {
     const snap = await getDocs(q);
     const shows = snap.docs.map(

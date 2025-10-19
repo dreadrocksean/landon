@@ -1,12 +1,8 @@
 import {
-  Artist,
   ClientArtist,
   ClientShow,
   ClientUser,
   ClientWebpage,
-  Show,
-  User,
-  Webpage,
 } from "@/lib/schema";
 import { create } from "zustand";
 

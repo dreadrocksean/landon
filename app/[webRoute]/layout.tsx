@@ -76,10 +76,7 @@ const WebRouteLayout = async ({ children, params }: WebRouteLayoutProps) => {
     venueRef: null,
     venue: { ...show.venue, createdAt: show?.venue?.createdAt.toMillis() },
   });
-  const showsPlain = shows.map(serializeShow);
-  const showsSorted = [...showsPlain].sort(
-    (a, b) => b.scheduledStart - a.scheduledStart
-  );
+  const processedShows = shows.map(serializeShow);
 
   const serializeArtist = (artist: Artist) => ({
     ...artist,
@@ -103,7 +100,7 @@ const WebRouteLayout = async ({ children, params }: WebRouteLayoutProps) => {
       artist={serializeArtist(artist)}
       webpage={serializeWebpage(webpage)}
       user={serializeUser(user)}
-      shows={showsSorted}
+      shows={processedShows}
       imageGallery={imageGallery}
     >
       {children}

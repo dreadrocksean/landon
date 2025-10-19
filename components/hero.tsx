@@ -38,8 +38,8 @@ const Hero: React.FC<HeroProps> = ({
 
     <div className="absolute z-20 inset-0 bg-bg-overly bg-opacity-20"></div>
 
-    <Container className="relative z-30 flex flex-col justify-center min-h-screen">
-      {!basic && (
+    {!basic && (
+      <Container className="relative z-30 flex flex-col justify-center min-h-screen">
         <>
           <h1
             data-aos="fade-up"
@@ -63,8 +63,8 @@ const Hero: React.FC<HeroProps> = ({
             </div>
           </div>
         </>
-      )}
-    </Container>
+      </Container>
+    )}
   </section>
 );
 

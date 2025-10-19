@@ -14,8 +14,6 @@ const Home: FC = () => {
   const artist = useStore((state) => state.artist);
   const webpage = useStore((state) => state.webpage);
 
-  // console.log("🚀 ~ Home ~ artist:", artist);
-  // console.log("🚀 ~ Home ~ webpage:", webpage);
   return artist && webpage ? (
     <>
       <Featured
@@ -24,8 +22,8 @@ const Home: FC = () => {
         name={webpage.heroTitle}
         videoUrl={webpage.featuredVideoUrl}
       />
-      <UpcomingShows shows={shows} />
-      <FeaturedGrid images={imageGallery} />
+      {shows?.length > 0 && <UpcomingShows shows={shows} />}
+      {imageGallery && <FeaturedGrid images={imageGallery} />}
     </>
   ) : (
     <NotFound />
