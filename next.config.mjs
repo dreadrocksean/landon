@@ -6,8 +6,7 @@ const nextConfig = {
     unoptimized: true, // Disables the default behavior of optimizing images with the next/image component
     // disableStaticImages: true, // Disable the default image optimization
   },
-  // output: "export",
-  output: undefined, // disable static export
+  // Dynamic (SSR) mode — runs on Vercel; artist pages render per-request with live data.
   reactStrictMode: true,
 };
 

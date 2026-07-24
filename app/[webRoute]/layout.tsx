@@ -9,9 +9,12 @@ import {
   getUserById,
   getShowsByArtistId,
   getImageGalleryByArtistId,
-} from "@/lib/gcp/artists";
+} from "@/lib/gcp/server";
+
+// Always server-render with fresh data (live shows/artists), rather than
+// caching a build-time snapshot.
+export const dynamic = "force-dynamic";
 import ClientWebRouteLayout from "./ClientWebRouteLayout"; // client wrapper
-import { Artist, Show, User, Webpage } from "@/lib/schema";
 
 interface WebRouteLayoutProps {
   children: React.ReactNode;
@@ -67,40 +70,14 @@ const WebRouteLayout = async ({ children, params }: WebRouteLayoutProps) => {
 
   if (!user) return notFound();
 
-  const serializeShow = (show: Show) => ({
-    ...show,
-    createdAt: show.createdAt.toMillis(),
-    scheduledStart: show.scheduledStart.toMillis(),
-    scheduledStop: show.scheduledStop.toMillis(),
-    endTime: show?.endTime?.toMillis() || null,
-    venueRef: null,
-    venue: { ...show.venue, createdAt: show?.venue?.createdAt.toMillis() },
-  });
-  const processedShows = shows.map(serializeShow);
-
-  const serializeArtist = (artist: Artist) => ({
-    ...artist,
-    createdAt: artist.createdAt.toMillis(),
-    scheduledStart: artist.scheduledStart?.toMillis() || null,
-    scheduledStop: artist.scheduledStop?.toMillis() || null,
-  });
-
-  const serializeWebpage = (webpage: Webpage) => ({
-    ...webpage,
-    createdAt: webpage.createdAt.toMillis(),
-  });
-
-  const serializeUser = (user: User) => ({
-    ...user,
-    createdAt: user.createdAt.toMillis(),
-  });
-
+  // Data from lib/gcp/server.ts is already deep-serialized (Timestamps -> millis,
+  // DocumentReferences -> null), so it can be passed straight to the client.
   return (
     <ClientWebRouteLayout
-      artist={serializeArtist(artist)}
-      webpage={serializeWebpage(webpage)}
-      user={serializeUser(user)}
-      shows={processedShows}
+      artist={artist}
+      webpage={webpage}
+      user={user}
+      shows={shows}
       imageGallery={imageGallery}
     >
       {children}

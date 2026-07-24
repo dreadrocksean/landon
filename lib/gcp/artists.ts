@@ -49,6 +49,13 @@ export const getImageGalleryByArtistId = async ({
 
     // List all files in the gallery folder
     const result = await listAll(galleryRef);
+    console.log("🚀 ~ getImageGalleryByArtistId ~ result:", result);
+    console.log(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+
+    console.log(
+      "Gallery path:",
+      `artists/${artistId}/webpage/imageGallery/small`
+    );
 
     // Map each file reference to its download URL with cache-busting
     const urls = await Promise.all(
