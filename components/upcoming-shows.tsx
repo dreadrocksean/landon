@@ -72,6 +72,9 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
             });
             const cancelled = show.showStatus === "cancelled";
             const passed = show.scheduledStop < Date.now();
+            // Private gigs (private venue) keep their date/time public but hide
+            // the venue name and address.
+            const isPrivate = show.venue?.isPrivate === true;
 
             return (
               <div
@@ -97,7 +100,7 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
                         : "transition-all duration-300 ease-linear group-hover:text-rose"
                     } font-bold text-xl text-center md:text-start md:line-clamp-1`}
                   >
-                    {show.venueName}
+                    {isPrivate ? "Private event" : show.venueName}
                   </h4>
                   <h4
                     className={`${
@@ -106,10 +109,12 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
                         : "transition-all duration-300 ease-linear group-hover:text-rose"
                     }  text-center md:text-start md:line-clamp-1`}
                   >
-                    {(show.venue?.location?.formatted_address ||
-                      show.showTitle) ??
-                      show.title ??
-                      ""}
+                    {isPrivate
+                      ? ""
+                      : (show.venue?.location?.formatted_address ||
+                          show.showTitle) ??
+                        show.title ??
+                        ""}
                   </h4>
                 </div>
 

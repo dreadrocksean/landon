@@ -161,6 +161,9 @@ export type Venue = {
   location: Location;
   categories?: Category[];
   name: string; // Name of the venue
+  // Private venues (set in the buyer app) must not expose their name or address
+  // on the public artist page — a private gig only shows the date/time.
+  isPrivate?: boolean;
 };
 export type FSQVenue = Omit<Venue, "id">;
 export type ClientVenue = Omit<Venue, "createdAt"> & {
