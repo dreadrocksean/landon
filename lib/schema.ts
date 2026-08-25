@@ -87,6 +87,9 @@ export type BaseShow = {
   showTitle?: string;
   title?: string;
   showStatus?: "free" | "cancelled" | "confirmed";
+  // Per-gig "Mark as Private" (set in the app's gig editor). A private gig hides
+  // its venue name + address on the public page — only the date/time show.
+  isPrivate?: boolean;
 };
 
 export type FirestoreShow = BaseShow & {

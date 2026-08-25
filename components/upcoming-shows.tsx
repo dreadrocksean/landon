@@ -72,9 +72,11 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
             });
             const cancelled = show.showStatus === "cancelled";
             const passed = show.scheduledStop < Date.now();
-            // Private gigs (private venue) keep their date/time public but hide
-            // the venue name and address.
-            const isPrivate = show.venue?.isPrivate === true;
+            // Private gigs keep their date/time public but hide the venue name
+            // and address. Driven by the gig's own "Mark as Private" flag
+            // (show.isPrivate); a private venue also counts.
+            const isPrivate =
+              show.isPrivate === true || show.venue?.isPrivate === true;
 
             return (
               <div
