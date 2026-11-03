@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { IoSettingsSharp } from "react-icons/io5";
 import { CiTextAlignLeft, CiTextAlignRight } from "react-icons/ci";
 import { twMerge } from "tailwind-merge";
@@ -10,6 +11,12 @@ const Settings: React.FC = () => {
   const [active, setActive] = useState<boolean>(false);
   const toggle = (): void => setActive((prev) => !prev);
   const { setIsRTL } = useLayout();
+  const pathname = usePathname();
+
+  // The venue TV board is an audience-facing wall display with nobody at a
+  // mouse — a floating gear is just something to burn into the screen.
+  if (pathname?.startsWith("/tv/")) return null;
+
   return (
     <div dir="ltr" className="z-40  fixed top-1/2 right-0 ">
       <button

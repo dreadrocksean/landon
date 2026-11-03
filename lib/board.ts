@@ -1,0 +1,63 @@
+// lib/board.ts
+// Pure helpers and types for the venue TV board. No Firebase imports, so this
+// is safe to pull into a client component — lib/gcp/board.ts holds the
+// server-only (Admin SDK) read.
+//
+// Mirrors functions/src/tvBoard/boardCode.js in the TellMeWhatToPlay client
+// repo, which mints the codes and writes the board docs — keep the two in step.
+
+export const BOARD_CODE_LEN = 6;
+
+// "abc-123", "abc 123" and "ABC123" all name the same board, because the code
+// gets read off a TV and typed on a remote.
+export const normalizeBoardCode = (raw?: string | null): string =>
+  String(raw || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+
+// Display form, grouped so it is readable from across a room: ABC-123.
+export const formatBoardCode = (raw?: string | null): string => {
+  const normalized = normalizeBoardCode(raw);
+  if (normalized.length !== BOARD_CODE_LEN) return normalized;
+  return `${normalized.slice(0, 3)}-${normalized.slice(3)}`;
+};
+
+export interface BoardSong {
+  songId: string;
+  title: string;
+  artist: string | null;
+  votes: number;
+}
+
+export interface Board {
+  artistId: string;
+  artistName: string;
+  live: boolean;
+  showId: string | null;
+  showTitle: string | null;
+  venueName: string | null;
+  songs: BoardSong[];
+  totalVotes: number;
+}
+
+// Shape an arbitrary Firestore document into the Board the page renders,
+// tolerating docs written by an older version of the Cloud Function. Also
+// drops the doc's updatedAt Timestamp, which is not serializable across the
+// Server -> Client boundary.
+export const toBoard = (data: Record<string, any>): Board => ({
+  artistId: String(data.artistId ?? ""),
+  artistName: String(data.artistName ?? ""),
+  live: data.live === true,
+  showId: data.showId ?? null,
+  showTitle: data.showTitle ?? null,
+  venueName: data.venueName ?? null,
+  songs: Array.isArray(data.songs)
+    ? data.songs.map((song: any) => ({
+        songId: String(song?.songId ?? ""),
+        title: String(song?.title ?? "Untitled"),
+        artist: song?.artist ?? null,
+        votes: typeof song?.votes === "number" ? song.votes : 0,
+      }))
+    : [],
+  totalVotes: typeof data.totalVotes === "number" ? data.totalVotes : 0,
+});
