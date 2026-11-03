@@ -15,6 +15,18 @@ export const normalizeBoardCode = (raw?: string | null): string =>
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, "");
 
+// Route params arrive percent-encoded, so a typed space reaches us as "%20"
+// and normalizing it directly would strip the "%" and keep the "20" — turning
+// "ZZT EST" into the plausible-looking, wrong "ZZT20EST". Decode first, and
+// treat malformed encoding ("%ZZ") as empty rather than throwing at a TV.
+export const decodeCodeParam = (raw?: string | null): string => {
+  try {
+    return decodeURIComponent(String(raw || ""));
+  } catch {
+    return "";
+  }
+};
+
 // Display form, grouped so it is readable from across a room: ABC-123.
 export const formatBoardCode = (raw?: string | null): string => {
   const normalized = normalizeBoardCode(raw);

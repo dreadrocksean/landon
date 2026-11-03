@@ -7,7 +7,11 @@ import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode-svg";
 
-import { formatBoardCode, normalizeBoardCode } from "@/lib/board";
+import {
+  decodeCodeParam,
+  formatBoardCode,
+  normalizeBoardCode,
+} from "@/lib/board";
 import { getBoardByCode } from "@/lib/gcp/board";
 import TvBoard from "./TvBoard";
 
@@ -22,7 +26,7 @@ interface TvPageProps {
 export const generateMetadata = async ({
   params,
 }: TvPageProps): Promise<Metadata> => {
-  const board = await getBoardByCode(params.code);
+  const board = await getBoardByCode(decodeCodeParam(params.code));
   return {
     title: board ? `${board.artistName} — Live Requests` : "Live Requests",
     // A venue's board URL has no business in search results.
@@ -31,7 +35,7 @@ export const generateMetadata = async ({
 };
 
 const TvBoardPage = async ({ params }: TvPageProps) => {
-  const code = normalizeBoardCode(params.code);
+  const code = normalizeBoardCode(decodeCodeParam(params.code));
   if (!code) notFound();
 
   // Settle on one spelling (ABC-123) so a venue that bookmarks the page, or
