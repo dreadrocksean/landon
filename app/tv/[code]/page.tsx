@@ -4,7 +4,7 @@
 // Server-rendered so the board is already painted when the screen wakes up
 // (no spinner on a wall display), then TvBoard subscribes for live updates.
 import { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import QRCode from "qrcode-svg";
 
 import {
@@ -13,6 +13,7 @@ import {
   normalizeBoardCode,
 } from "@/lib/board";
 import { getBoardByCode } from "@/lib/gcp/board";
+import BoardNotFound from "./BoardNotFound";
 import TvBoard from "./TvBoard";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +37,9 @@ export const generateMetadata = async ({
 
 const TvBoardPage = async ({ params }: TvPageProps) => {
   const code = normalizeBoardCode(decodeCodeParam(params.code));
-  if (!code) notFound();
+  // Nothing usable in the URL at all — show the help screen rather than
+  // redirecting to an equally empty one.
+  if (!code) return <BoardNotFound entered="" />;
 
   // Settle on one spelling (ABC-123) so a venue that bookmarks the page, or
   // casts it from history, always lands on the same URL.
@@ -44,7 +47,7 @@ const TvBoardPage = async ({ params }: TvPageProps) => {
   if (params.code !== displayCode) redirect(`/tv/${displayCode}`);
 
   const board = await getBoardByCode(code);
-  if (!board) notFound();
+  if (!board) return <BoardNotFound entered={displayCode} />;
 
   // Generated here rather than fetched from a QR image service: the code is
   // the one thing on this screen that has to work, and a gig is no place to
