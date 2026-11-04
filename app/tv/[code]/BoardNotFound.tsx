@@ -41,7 +41,7 @@ const BoardNotFound: React.FC<BoardNotFoundProps> = ({ entered }) => (
     </p>
     <p className="mt-[1.2vw] max-w-[60ch] text-[clamp(0.7rem,1.4vw,1.9rem)] leading-tight text-cyan">
       In the app, the artist opens the menu and taps{" "}
-      <span className="text-white">Send to TV</span>. Codes never contain the
+      <span className="text-white">TV Link</span>. Codes never contain the
       letters O or I, or the digits zero or one.
     </p>
   </main>
