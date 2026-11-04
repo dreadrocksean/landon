@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 import { db } from "@/lib/gcp/client";
-import { Board, toBoard } from "@/lib/board";
+import { Board, BoardSong, toBoard } from "@/lib/board";
 
 interface TvBoardProps {
   code: string;
@@ -118,12 +118,41 @@ const TvBoard: React.FC<TvBoardProps> = ({
     [board.songs]
   );
 
+  // Fanfare. In the app, a fan's pick reaching #1 fires confetti once per
+  // climb — never on mount. The room equivalent is a song breaking into the
+  // Top 5 at all, since the screen cannot know whose pick it was.
+  //
+  // The seen-set starts as whatever was already on screen at first paint, so
+  // a board opened mid-set does not celebrate five songs at once.
+  const seenRef = useRef<Set<string> | null>(null);
+  const [entrant, setEntrant] = useState<BoardSong | null>(null);
+
+  useEffect(() => {
+    const ids = board.songs.map((song) => song.songId);
+    if (seenRef.current === null) {
+      seenRef.current = new Set(ids);
+      return;
+    }
+    const fresh = board.songs.find((song) => !seenRef.current!.has(song.songId));
+    seenRef.current = new Set(ids);
+    if (!fresh) return;
+    setEntrant(fresh);
+    const timer = setTimeout(() => setEntrant(null), 6000);
+    return () => clearTimeout(timer);
+  }, [board.songs]);
+
   const subtitle = [board.venueName, board.showTitle]
     .filter(Boolean)
     .join(" · ");
 
   return (
-    <main className="flex h-screen w-screen flex-row justify-start overflow-hidden bg-bg-dark text-white">
+    <main
+      /* Surfaced for tests: the celebration is a 6s window that is awkward to
+         catch by scraping text, and these make it observable. */
+      data-entrant={entrant?.songId ?? "none"}
+      data-songs={board.songs.map((x) => x.songId).join(",")}
+      className="flex h-screen w-screen flex-row justify-start overflow-hidden bg-bg-dark text-white"
+    >
       <div className="flex min-w-0 flex-1 flex-col p-[3.2vw] pr-0">
         <header className="flex items-baseline gap-[1.6vw]">
           {board.live && (
@@ -143,13 +172,23 @@ const TvBoard: React.FC<TvBoardProps> = ({
           </p>
         )}
 
-        <div className="mt-[2vw] min-h-0 flex-1">
+        {board.songs.length > 0 && (
+          <p className="mt-[1.6vw] text-[clamp(0.7rem,1.3vw,1.75rem)] font-bold uppercase leading-none tracking-[0.25em] text-cyan">
+            🔥 Crowd Favorites
+          </p>
+        )}
+
+        <div className="mt-[1.2vw] min-h-0 flex-1">
           {board.songs.length > 0 ? (
             <ol className="flex h-full flex-col gap-[0.9vw]">
               {board.songs.map((song, index) => (
                 <li
                   key={song.songId}
-                  className="relative flex min-h-0 flex-1 items-center gap-[1.4vw] overflow-hidden rounded-[0.6vw] bg-light-dark/40 px-[1.4vw]"
+                  className={`relative flex min-h-0 flex-1 items-center gap-[1.4vw] overflow-hidden rounded-[0.6vw] px-[1.4vw] transition-colors duration-500 ${
+                    entrant?.songId === song.songId
+                      ? "bg-lime/25 ring-[0.2vw] ring-lime"
+                      : "bg-light-dark/40"
+                  }`}
                 >
                   {/* Share of the leader's votes, as a bar behind the row. */}
                   <span
@@ -161,7 +200,13 @@ const TvBoard: React.FC<TvBoardProps> = ({
                         : "0%",
                     }}
                   />
-                  <span className="relative w-[3vw] shrink-0 text-[clamp(0.9rem,1.9vw,2.5rem)] font-bold leading-none text-cyan">
+                  <span
+                    className={`relative flex size-[3.2vw] shrink-0 items-center justify-center rounded-full text-[clamp(0.9rem,1.9vw,2.5rem)] font-bold leading-none ${
+                      index === 0
+                        ? "bg-[#ffd000] text-bg-dark"
+                        : "bg-[#8a6fe0] text-white"
+                    }`}
+                  >
                     {index + 1}
                   </span>
                   <span className="relative min-w-0 flex-1">
@@ -250,6 +295,27 @@ const TvBoard: React.FC<TvBoardProps> = ({
           </p>
         )}
       </aside>
+
+      {/* The fanfare. Sized to be read from the back of the room rather than
+          leaned into — a venue screen gets a glance, not attention. Clears
+          itself after 6s. */}
+      {entrant && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-10 flex justify-center">
+          <div className="tv-entrant flex max-w-[80vw] items-center gap-[1.2vw] rounded-t-[1vw] bg-lime px-[2.4vw] py-[1.1vw] text-bg-dark shadow-2xl">
+            <span className="shrink-0 text-[clamp(1rem,2.2vw,3rem)] leading-none">
+              🎉
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[clamp(0.6rem,1.1vw,1.5rem)] font-bold uppercase leading-none tracking-[0.25em]">
+                New in the Top 5
+              </span>
+              <span className="mt-[0.3vw] block truncate text-[clamp(1rem,2.3vw,3.1rem)] font-bold leading-tight">
+                {entrant.title}
+              </span>
+            </span>
+          </div>
+        </div>
+      )}
 
       <span className="pointer-events-none fixed bottom-[1vw] right-[1.2vw] text-[clamp(0.5rem,0.8vw,1rem)] uppercase tracking-[0.3em] text-cyan/50">
         {offline ? "Reconnecting…" : displayCode}

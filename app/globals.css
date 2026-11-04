@@ -39,3 +39,33 @@ body::-webkit-scrollbar-thumb {
   }
 }
 
+
+/* Venue TV board: a song breaking into the Top 5 lifts a banner in from the
+   bottom, holds it long enough to be read from across a room, then drops it
+   away. Bottom rather than top so it never covers the artist's name.
+
+   A plain class, not a Tailwind arbitrary `animate-[...]` value: Tailwind
+   does not emit one for a keyframe name it has no definition for, and the
+   silent result is an element with animation: none. */
+.tv-entrant {
+  animation: tvEntrant 6s ease-out forwards;
+}
+
+@keyframes tvEntrant {
+  0% {
+    transform: translateY(120%);
+    opacity: 0;
+  }
+  6% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  88% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(120%);
+    opacity: 0;
+  }
+}
