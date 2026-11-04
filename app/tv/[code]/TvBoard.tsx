@@ -275,6 +275,38 @@ const TvBoard: React.FC<TvBoardProps> = ({
     soundRef.current?.play(id, { force: true });
   }, []);
 
+  // The artist's kill switch, read straight off the show doc — the same
+  // anonymous read the reactions use, so it needs no Cloud Function and takes
+  // effect the moment they hit it rather than on the next vote.
+  //
+  // Absent means allowed: patching this board into the PA was already a
+  // deliberate act, so this is the switch to slam, not a second setup step.
+  // A refused listener therefore leaves the sounds ON, which is the honest
+  // default — the artist can see the badge and hit mute, whereas silently
+  // disarming would leave them pressing a button that does nothing.
+  //
+  // Mirrored into a ref so the play path can check it without this listener
+  // re-rendering the board.
+  const fxAllowedRef = useRef(true);
+  const [fxAllowed, setFxAllowed] = useState(true);
+
+  useEffect(() => {
+    if (!fxOn || !board.artistId || !board.showId) return;
+    const unsub = onSnapshot(
+      doc(db, "artists", board.artistId, "shows", board.showId),
+      (snap) => {
+        const allowed = snap.data()?.soundFx !== false;
+        fxAllowedRef.current = allowed;
+        setFxAllowed(allowed);
+      },
+      () => {
+        // Cosmetic listener for a safety control: never take the board down,
+        // and never imply a mute that was not asked for.
+      }
+    );
+    return () => unsub();
+  }, [fxOn, board.artistId, board.showId]);
+
   // Flying reactions, mirroring the app's ReactionOverlay. Read straight from
   // artists/{id}/shows/{id}/reactions rather than through publicBoards: they
   // are ephemeral, high-frequency and cosmetic, and routing each one through
@@ -320,7 +352,9 @@ const TvBoard: React.FC<TvBoardProps> = ({
           // play() returns false when the global cooldown swallows it, which
           // in a busy room is the common case and not an error.
           const fx = SOUND_FOR_REACTION[String(data.type)];
-          if (fx && soundRef.current?.play(fx)) playedFx = fx;
+          if (fx && fxAllowedRef.current && soundRef.current?.play(fx)) {
+            playedFx = fx;
+          }
           fresh.push({
             key: `${change.doc.id}-${seq}`,
             emoji: String(data.emoji || "😄"),
@@ -372,7 +406,9 @@ const TvBoard: React.FC<TvBoardProps> = ({
       data-tip={tip?.id ?? "none"}
       data-songs={board.songs.map((x) => x.songId).join(",")}
       data-counts={showCounts ? "shown" : "hidden"}
-      data-sound={fxOn ? (soundReady ? "armed" : "locked") : "off"}
+      data-sound={
+        fxOn ? (soundReady ? (fxAllowed ? "armed" : "muted") : "locked") : "off"
+      }
       data-sound-last={lastFx}
       className="flex h-screen w-screen flex-row justify-start overflow-hidden bg-bg-dark text-white"
     >
@@ -659,9 +695,18 @@ const TvBoard: React.FC<TvBoardProps> = ({
         <div className="fixed right-[1.2vw] top-[1.2vw] z-30 flex flex-col items-end gap-[0.6vw]">
           {soundReady ? (
             <>
-              <span className="rounded-full bg-lime px-[1vw] py-[0.35vw] text-[clamp(0.5rem,0.85vw,1.05rem)] font-bold uppercase tracking-[0.2em] leading-none text-bg-dark">
-                🔊 Sound armed
-              </span>
+              {fxAllowed ? (
+                <span className="rounded-full bg-lime px-[1vw] py-[0.35vw] text-[clamp(0.5rem,0.85vw,1.05rem)] font-bold uppercase tracking-[0.2em] leading-none text-bg-dark">
+                  🔊 Sound armed
+                </span>
+              ) : (
+                /* Distinct from "locked": the audio works fine, the artist
+                   has muted the room. Confusing the two means someone at the
+                   desk debugging a system that is behaving correctly. */
+                <span className="rounded-full bg-rose px-[1vw] py-[0.35vw] text-[clamp(0.5rem,0.85vw,1.05rem)] font-bold uppercase tracking-[0.2em] leading-none text-white">
+                  🔇 Muted by artist
+                </span>
+              )}
               {/* Set the gain before doors, not during a ballad. */}
               <div className="flex flex-wrap justify-end gap-[0.4vw]">
                 {SOUND_LIST.map((sound) => (
