@@ -401,6 +401,17 @@ export const SOUND_LIST: {
 // onto no emote at all, which is the clearest evidence that the sound menu
 // wants to be its own short, deliberate, probably paid list rather than a
 // second job for an emoji bar built to be mashed.
+// Ids a fan is allowed to fire. Everything in the catalogue except the
+// reference tone, which exists for whoever is setting the gain and would be a
+// strange thing for a room to be able to trigger. Also the gate that stops an
+// unknown or crafted `sound` value reaching play().
+const FAN_PLAYABLE: ReadonlySet<string> = new Set(
+  (Object.keys(SOUNDS) as SoundId[]).filter((id) => id !== "test")
+);
+
+export const isFanSoundId = (value: unknown): value is SoundId =>
+  typeof value === "string" && FAN_PLAYABLE.has(value);
+
 export const SOUND_FOR_REACTION: Record<string, SoundId | undefined> = {
   bang: "thunder",
   booyah: "applause",

@@ -21,6 +21,7 @@ import { db } from "@/lib/gcp/client";
 import { Board, BoardSong, BoardTip, toBoard } from "@/lib/board";
 import {
   createSoundBoard,
+  isFanSoundId,
   SOUND_FOR_REACTION,
   SOUND_LIST,
   SoundBoard,
@@ -356,7 +357,13 @@ const TvBoard: React.FC<TvBoardProps> = ({
           // extra to reach: no new listener, no new write, no Cloud Function.
           // play() returns false when the global cooldown swallows it, which
           // in a busy room is the common case and not an error.
-          const fx = SOUND_FOR_REACTION[String(data.type)];
+          // A sound the fan picked outright wins; mapping an emote type is
+          // the fallback for taps on the reaction bar, which has no way to
+          // name a sound. Validated rather than trusted — this value comes
+          // off a client write.
+          const fx: SoundId | undefined = isFanSoundId(data.sound)
+            ? data.sound
+            : SOUND_FOR_REACTION[String(data.type)];
           if (fx && fxAllowedRef.current && soundRef.current?.play(fx)) {
             playedFx = fx;
           }
