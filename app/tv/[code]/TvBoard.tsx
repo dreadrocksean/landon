@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+} from "firebase/firestore";
 
 import { db } from "@/lib/gcp/client";
 import { Board, BoardSong, BoardTip, toBoard } from "@/lib/board";
@@ -20,13 +28,39 @@ const STEPS = ["Scan the code", "Request a song", "Watch it climb"];
 
 // Fixed, not random: the page is server-rendered, and a random list would
 // differ between the server HTML and hydration.
+interface Flyer {
+  key: string;
+  emoji: string;
+  size: number;
+  left: number;
+  drift: number;
+  duration: number;
+}
+
 const CONFETTI_COLORS = ["#ffd000", "#f33274", "#35e8b4", "#8a6fe0", "#ffffff"];
-const CONFETTI = Array.from({ length: 28 }, (_, i) => ({
-  left: (i * 37) % 100,
-  size: 0.9 + ((i * 7) % 5) * 0.25,
+
+// One piece takes CONFETTI_FALL_S to cross the screen. Launches are spread
+// across that same window, so by the time the first piece reaches the bottom
+// the top is still emitting — the screen is full top to bottom, and the whole
+// burst runs for two screenfuls (fall + emission) before it clears.
+const CONFETTI_FALL_S = 2.6;
+const CONFETTI_COUNT = 120;
+const CONFETTI_TOTAL_MS = (CONFETTI_FALL_S * 2 + 0.4) * 1000;
+
+// Celebrations stay clear of the right-hand panel. The QR is the whole point
+// of the screen, and a scan that fails because a confetti square or an emoji
+// was sitting on the code costs an install at the exact moment someone
+// decided to get the app.
+const CELEBRATION_MAX_LEFT = 66;
+
+const CONFETTI = Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
+  // Golden-ratio stride scatters the columns instead of banding them, which
+  // a simple (i * k) % 100 does as soon as k divides evenly into 100.
+  left: (i * 61.803) % CELEBRATION_MAX_LEFT,
+  size: 0.8 + ((i * 7) % 6) * 0.22,
   color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-  delay: ((i * 13) % 10) / 20,
-  duration: 2.2 + ((i * 5) % 7) * 0.2,
+  delay: (i / CONFETTI_COUNT) * CONFETTI_FALL_S,
+  duration: CONFETTI_FALL_S + ((i * 5) % 7) * 0.12,
 }));
 
 const TvBoard: React.FC<TvBoardProps> = ({
@@ -146,6 +180,7 @@ const TvBoard: React.FC<TvBoardProps> = ({
   // opened with none — which is the case that matters most.
   const tipPrimedRef = useRef(false);
   const [tip, setTip] = useState<BoardTip | null>(null);
+  const [confetti, setConfetti] = useState(false);
 
   useEffect(() => {
     const current = board.recentTip;
@@ -159,9 +194,80 @@ const TvBoard: React.FC<TvBoardProps> = ({
     if (!current || current.id === lastTipRef.current) return;
     lastTipRef.current = current.id;
     setTip(current);
-    const timer = setTimeout(() => setTip(null), 8000);
-    return () => clearTimeout(timer);
+    setConfetti(true);
+    const hideConfetti = setTimeout(() => setConfetti(false), CONFETTI_TOTAL_MS);
+    const hideBanner = setTimeout(() => setTip(null), 8000);
+    return () => {
+      clearTimeout(hideConfetti);
+      clearTimeout(hideBanner);
+    };
   }, [board.recentTip]);
+
+  // Flying reactions, mirroring the app's ReactionOverlay. Read straight from
+  // artists/{id}/shows/{id}/reactions rather than through publicBoards: they
+  // are ephemeral, high-frequency and cosmetic, and routing each one through
+  // a Cloud Function would add seconds to something whose whole point is that
+  // it lands the moment a fan taps. Anonymous reads of an active artist's
+  // reactions are already permitted by firestore.rules.
+  const [flyers, setFlyers] = useState<Flyer[]>([]);
+  const flyerSeq = useRef(0);
+
+  useEffect(() => {
+    if (!board.artistId || !board.showId) return;
+    const mountMs = Date.now();
+    const q = query(
+      collection(
+        db,
+        "artists",
+        board.artistId,
+        "shows",
+        board.showId,
+        "reactions"
+      ),
+      orderBy("createdAt", "desc"),
+      limit(30)
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const fresh: Flyer[] = [];
+        snap.docChanges().forEach((change) => {
+          if (change.type !== "added") return;
+          const data = change.doc.data() as Record<string, any>;
+          // Skip the history the query returns on mount, and writes whose
+          // server timestamp has not resolved yet.
+          const atMs = data?.createdAt?.toMillis?.() ?? 0;
+          if (!atMs || atMs < mountMs) return;
+          flyerSeq.current += 1;
+          const seq = flyerSeq.current;
+          const isTip = typeof data.amount === "number" && data.amount > 0;
+          fresh.push({
+            key: `${change.doc.id}-${seq}`,
+            emoji: String(data.emoji || "😄"),
+            // Tips fly bigger, as they do in the app.
+            size: isTip ? 7 + Math.min(Number(data.amount), 20) * 0.25 : 5.5,
+            left: 4 + ((seq * 61.803) % (CELEBRATION_MAX_LEFT - 8)),
+            drift: ((seq * 37) % 14) - 7,
+            duration: 3 + ((seq * 11) % 10) * 0.15,
+          });
+        });
+        if (!fresh.length) return;
+        setFlyers((prev) => [...prev, ...fresh].slice(-40));
+      },
+      () => {
+        // Cosmetic: a refused or dropped listener must never take the board
+        // down with it.
+      }
+    );
+    return () => unsub();
+  }, [board.artistId, board.showId]);
+
+  // Reap finished flyers so the list cannot grow without bound over a set.
+  useEffect(() => {
+    if (!flyers.length) return;
+    const id = setTimeout(() => setFlyers((prev) => prev.slice(1)), 1200);
+    return () => clearTimeout(id);
+  }, [flyers]);
 
   useEffect(() => {
     const ids = board.songs.map((song) => song.songId);
@@ -401,7 +507,7 @@ const TvBoard: React.FC<TvBoardProps> = ({
           built from a handful of divs rather than a canvas library: the board
           runs on a TV stick, and transform/opacity keyframes stay on the GPU
           where a canvas loop would not. */}
-      {tip && (
+      {confetti && (
         <div aria-hidden className="pointer-events-none fixed inset-0 z-20 overflow-hidden">
           {CONFETTI.map((piece, i) => (
             <span
@@ -416,6 +522,30 @@ const TvBoard: React.FC<TvBoardProps> = ({
                 animationDuration: `${piece.duration}s`,
               }}
             />
+          ))}
+        </div>
+      )}
+
+      {/* Flying reactions. Launched from the bottom edge so they rise across
+          the board without ever sitting on top of the artist's name. */}
+      {flyers.length > 0 && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-20 overflow-hidden"
+        >
+          {flyers.map((f) => (
+            <span
+              key={f.key}
+              className="tv-flyer absolute bottom-0 block leading-none"
+              style={{
+                left: `${f.left}%`,
+                fontSize: `${f.size}vh`,
+                animationDuration: `${f.duration}s`,
+                ["--tv-drift" as string]: `${f.drift}vw`,
+              }}
+            >
+              {f.emoji}
+            </span>
           ))}
         </div>
       )}
