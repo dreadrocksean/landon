@@ -16,6 +16,8 @@ interface TvBoardProps {
 // Everything is sized in vw so one layout fills a 32" bar TV and a 75" wall
 // screen alike, with clamp() keeping it sane if someone opens it on a laptop.
 
+const STEPS = ["Scan the code", "Request a song", "Watch it climb"];
+
 const TvBoard: React.FC<TvBoardProps> = ({
   code,
   displayCode,
@@ -136,37 +138,71 @@ const TvBoard: React.FC<TvBoardProps> = ({
             </ol>
           ) : (
             <div className="flex h-full flex-col justify-center">
-              <p className="text-[clamp(1.25rem,3.4vw,4.5rem)] font-bold leading-tight">
+              <p className="text-[clamp(1.25rem,3.9vw,5rem)] font-bold leading-[1.05]">
                 {board.live
-                  ? "No requests yet."
+                  ? "Be first — pick the opening song."
                   : "No live show right now."}
               </p>
-              <p className="mt-[1vw] text-[clamp(0.85rem,1.8vw,2.4rem)] leading-tight text-cyan">
+              <p className="mt-[1.2vw] text-[clamp(0.85rem,1.8vw,2.4rem)] leading-tight text-cyan">
                 {board.live
-                  ? "Get the app and put the first song up."
+                  ? "Scan the code, request a song, and watch the room vote it up."
                   : "Get the app and catch the next one."}
               </p>
+
+              {/* Before the first vote there is nothing to rank, so the space
+                  goes to explaining the mechanic — most of the room has never
+                  been asked to choose the setlist before. */}
+              {board.live && (
+                <ol className="mt-[3.4vw] flex flex-wrap gap-x-[2.4vw] gap-y-[1.2vw]">
+                  {STEPS.map((step, index) => (
+                    <li key={step} className="flex items-center gap-[0.9vw]">
+                      <span className="flex size-[2.7vw] shrink-0 items-center justify-center rounded-full bg-rose text-[clamp(0.65rem,1.3vw,1.75rem)] font-bold leading-none">
+                        {index + 1}
+                      </span>
+                      <span className="text-[clamp(0.7rem,1.45vw,1.95rem)] font-bold leading-tight">
+                        {step}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      <aside className="flex w-[27%] shrink-0 flex-col items-center justify-center gap-[1.4vw] p-[3.2vw] pl-[2vw]">
+      {/* The invitation. Everything here is aimed at someone glancing up from
+          a table across the room: the wordmark so they know what they are
+          being asked to join, the promise, then the code to act on it. */}
+      <aside className="flex w-[29%] shrink-0 flex-col items-center justify-center gap-[1vw] p-[2.6vw] pl-[1.6vw]">
+        {/* eslint-disable-next-line @next/next/no-img-element -- images are
+            unoptimized in next.config, so next/image buys nothing here. */}
+        <img
+          src="/img/tmwtp-logo.png"
+          alt="Tell Me What To Play"
+          className="w-[62%] shrink-0 object-contain"
+        />
+
+        <p className="text-center text-[clamp(0.75rem,1.6vw,2.1rem)] font-bold uppercase leading-tight tracking-[0.05em] text-lime">
+          You pick the next song
+        </p>
+
         <div
-          className="w-full rounded-[1vw] bg-white p-[1.2vw]"
+          className="w-[88%] rounded-[1vw] bg-white p-[1vw]"
           /* Trusted input: generated server-side by qrcode-svg from a URL we
              build ourselves, never from Firestore content. */
           dangerouslySetInnerHTML={{ __html: qrSvg }}
         />
+
         <p className="text-center text-[clamp(0.9rem,1.9vw,2.5rem)] font-bold uppercase leading-tight">
-          Scan to get the app
+          Scan to join in
         </p>
         <p className="text-center text-[clamp(0.65rem,1.2vw,1.6rem)] leading-tight text-cyan">
-          Then request songs, react and tip — live.
+          Request songs, react and tip the band — live.
         </p>
         {board.totalVotes > 0 && (
-          <p className="text-center text-[clamp(0.65rem,1.2vw,1.6rem)] leading-tight text-cyan">
-            {board.totalVotes} vote{board.totalVotes === 1 ? "" : "s"} so far
+          <p className="text-center text-[clamp(0.65rem,1.2vw,1.6rem)] font-bold leading-tight text-lime">
+            {board.totalVotes} vote{board.totalVotes === 1 ? "" : "s"} tonight
           </p>
         )}
       </aside>
