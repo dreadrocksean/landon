@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 import { db } from "@/lib/gcp/client";
 import { Board, toBoard } from "@/lib/board";
@@ -30,17 +30,61 @@ const TvBoard: React.FC<TvBoardProps> = ({
   // Votes land in publicBoards/{code} via Cloud Functions, so the screen
   // follows the room without polling.
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      doc(db, "publicBoards", code),
-      (snap) => {
-        setOffline(false);
-        // A missing doc means the artist rotated their code; keep showing the
-        // last standings rather than blanking the screen mid-set.
-        if (snap.exists()) setBoard(toBoard(snap.data()));
-      },
-      () => setOffline(true)
-    );
-    return unsubscribe;
+    const ref = doc(db, "publicBoards", code);
+    let unsubscribe: (() => void) | null = null;
+    let retry: ReturnType<typeof setTimeout> | null = null;
+    let attempt = 0;
+    let stopped = false;
+
+    const apply = (data: Record<string, unknown> | undefined) => {
+      // A missing doc means the artist rotated their code; keep showing the
+      // last standings rather than blanking the screen mid-set.
+      if (data) setBoard(toBoard(data));
+    };
+
+    // onSnapshot's error callback is terminal — the listener is torn down and
+    // never retries itself. Without this the board would freeze for the rest
+    // of the night on one transient network blip, which is exactly the
+    // conditions a venue provides.
+    const subscribe = () => {
+      if (stopped) return;
+      unsubscribe = onSnapshot(
+        ref,
+        (snap) => {
+          attempt = 0;
+          setOffline(false);
+          apply(snap.data());
+        },
+        () => {
+          setOffline(true);
+          unsubscribe = null;
+          attempt += 1;
+          const delay = Math.min(1000 * 2 ** (attempt - 1), 30000);
+          retry = setTimeout(subscribe, delay);
+        }
+      );
+    };
+    subscribe();
+
+    // Backstop. The stream can stall without ever erroring — a proxy holding
+    // the connection open sends nothing and reports nothing — so a cheap
+    // periodic read guarantees the screen is never more than ~15s stale. One
+    // small doc, four reads a minute, per screen.
+    const poll = setInterval(() => {
+      getDoc(ref)
+        .then((snap) => {
+          setOffline(false);
+          apply(snap.data());
+        })
+        .catch(() => setOffline(true));
+    }, 15000);
+
+    return () => {
+      stopped = true;
+      clearInterval(poll);
+      if (retry) clearTimeout(retry);
+      if (unsubscribe) unsubscribe();
+    };
   }, [code]);
 
   // A board that goes black halfway through the first set is useless. Not all
