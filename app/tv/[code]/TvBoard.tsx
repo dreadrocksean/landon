@@ -256,7 +256,12 @@ const TvBoard: React.FC<TvBoardProps> = ({
     });
     return () => {
       mounted = false;
-      soundRef.current = null;
+      // Only surrender the ref if it still points at THIS board. React runs
+      // this effect twice in development, and an older instance's cleanup
+      // landing after the newer one has claimed the ref would blank it —
+      // leaving a board that reports itself armed while every play() call
+      // quietly no-ops through the optional chain.
+      if (soundRef.current === sounds) soundRef.current = null;
       sounds.close();
     };
   }, []);

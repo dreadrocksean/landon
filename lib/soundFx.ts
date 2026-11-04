@@ -24,11 +24,22 @@
 // arrive, and a fetched sound is levelled by the same path.
 
 export type SoundId =
-  | "explosion"
+  // One-shots: a punctuation mark on something happening on stage.
+  | "thunder"
   | "applause"
-  | "airhorn"
-  | "bells"
-  | "shhh"
+  | "cheers"
+  | "fog-horn"
+  | "shh"
+  | "xmas-bells"
+  | "we-love-you-landon"
+  | "we-love-you-adrian"
+  | "we-love-you-guys"
+  // Beds: ambience that runs for ten to thirty seconds under the band.
+  | "breeze"
+  | "surf"
+  | "night-forest"
+  | "large-crowd"
+  // Not a sound effect — the engineer's reference tone.
   | "test";
 
 // One sound every few seconds for the whole room. Long enough that two taps
@@ -53,13 +64,31 @@ type RenderCtx = OfflineAudioContext;
 
 interface SoundSpec {
   label: string;
+  // Only needed to size the offline render for a synthesized sound.
   seconds: number;
-  // Synthesized by default. A spec carrying `url` prefers the recording and
-  // falls back to the synth if the fetch fails, so a missing file degrades to
-  // a placeholder instead of to silence.
+  // A spec carrying `url` prefers the recording and falls back to the synth if
+  // the fetch fails, so a missing file degrades to a placeholder rather than
+  // to silence. Ids with no synth at all simply go quiet, which is why the
+  // ones that have a plausible stand-in keep theirs.
   render?: (ctx: RenderCtx) => void;
   url?: string;
+  // A BED runs for ten to thirty seconds under the band rather than landing
+  // as a hit. Two differences follow, both enforced in play():
+  //   - only one plays at a time, and a new one fades the old out, because a
+  //     cooldown measured in seconds cannot stop 30s beds from stacking;
+  //   - it is trimmed below the one-shots. Levelling everything to one target
+  //     is right for hits, but a wash of surf matched to the loudness of a
+  //     thunder clap sits on top of the band instead of behind it.
+  bed?: boolean;
+  // Applied after levelling. 1 unless a sound needs to sit back.
+  trim?: number;
 }
+
+// Beds are trimmed to this under the levelled target.
+const BED_TRIM = 0.55;
+
+// Long enough for the longest bed to be cut off cleanly rather than clicking.
+const BED_FADE_S = 0.25;
 
 // Deterministic noise. The same seed gives the same sound every render, so a
 // change to one of these is an actual change rather than a different roll of
@@ -124,10 +153,13 @@ const envelope = (
   return gain;
 };
 
+const SFX = "/sfx";
+
 const SOUNDS: Record<SoundId, SoundSpec> = {
-  explosion: {
-    label: "Explosion",
+  thunder: {
+    label: "Thunder",
     seconds: 1.9,
+    url: `${SFX}/thunder.mp3`,
     render: (ctx) => {
       const noise = noiseSource(ctx, 1.9, 3);
       const lp = ctx.createBiquadFilter();
@@ -161,6 +193,7 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
   applause: {
     label: "Applause",
     seconds: 2.8,
+    url: `${SFX}/applause.m4a`,
     render: (ctx) => {
       const claps = burstSource(ctx, {
         seconds: 2.8,
@@ -182,9 +215,12 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
     },
   },
 
-  airhorn: {
-    label: "Airhorn",
+  cheers: { label: "Cheers", seconds: 5, url: `${SFX}/cheers.mp3` },
+
+  "fog-horn": {
+    label: "Fog horn",
     seconds: 1.5,
+    url: `${SFX}/fog-horn.mp3`,
     render: (ctx) => {
       const out = envelope(ctx, {
         attack: 0.03,
@@ -211,9 +247,31 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
     },
   },
 
-  bells: {
-    label: "Sleigh bells",
+  shh: {
+    label: "Shhhhh",
+    seconds: 1.5,
+    url: `${SFX}/shh.mp3`,
+    render: (ctx) => {
+      const noise = noiseSource(ctx, 1.5, 23);
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.setValueAtTime(5200, 0);
+      bp.frequency.exponentialRampToValueAtTime(3200, 1.4);
+      bp.Q.value = 1.1;
+      noise
+        .connect(bp)
+        .connect(
+          envelope(ctx, { attack: 0.1, hold: 0.7, release: 0.7, peak: 1 })
+        )
+        .connect(ctx.destination);
+      noise.start(0);
+    },
+  },
+
+  "xmas-bells": {
+    label: "Xmas bells",
     seconds: 2.2,
+    url: `${SFX}/xmas-bells.mp3`,
     render: (ctx) => {
       const jingle = burstSource(ctx, {
         seconds: 2.2,
@@ -254,24 +312,53 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
     },
   },
 
-  shhh: {
-    label: "Shhhhh",
-    seconds: 1.5,
-    render: (ctx) => {
-      const noise = noiseSource(ctx, 1.5, 23);
-      const bp = ctx.createBiquadFilter();
-      bp.type = "bandpass";
-      bp.frequency.setValueAtTime(5200, 0);
-      bp.frequency.exponentialRampToValueAtTime(3200, 1.4);
-      bp.Q.value = 1.1;
-      noise
-        .connect(bp)
-        .connect(
-          envelope(ctx, { attack: 0.1, hold: 0.7, release: 0.7, peak: 1 })
-        )
-        .connect(ctx.destination);
-      noise.start(0);
-    },
+  // Named chants. These are the ones with no synthesized stand-in and no
+  // generic fallback — a wrong name is worse than silence — and the reason
+  // the catalogue will eventually have to be resolved per artist rather than
+  // shipped as a fixed list.
+  "we-love-you-landon": {
+    label: "We love you Landon",
+    seconds: 4,
+    url: `${SFX}/we-love-you-landon.mp3`,
+  },
+  "we-love-you-adrian": {
+    label: "We love you Adrian",
+    seconds: 4,
+    url: `${SFX}/we-love-you-adrian.mp3`,
+  },
+  "we-love-you-guys": {
+    label: "We love you guys",
+    seconds: 4,
+    url: `${SFX}/we-love-you-guys.mp3`,
+  },
+
+  breeze: {
+    label: "Breeze",
+    seconds: 30,
+    url: `${SFX}/breeze.mp3`,
+    bed: true,
+    trim: BED_TRIM,
+  },
+  surf: {
+    label: "Surf",
+    seconds: 15,
+    url: `${SFX}/surf.mp3`,
+    bed: true,
+    trim: BED_TRIM,
+  },
+  "night-forest": {
+    label: "Night forest",
+    seconds: 15,
+    url: `${SFX}/night-forest.mp3`,
+    bed: true,
+    trim: BED_TRIM,
+  },
+  "large-crowd": {
+    label: "Large crowd",
+    seconds: 10,
+    url: `${SFX}/large-crowd.mp3`,
+    bed: true,
+    trim: BED_TRIM,
   },
 
   test: {
@@ -295,9 +382,15 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
   },
 };
 
-export const SOUND_LIST: { id: SoundId; label: string }[] = (
-  Object.keys(SOUNDS) as SoundId[]
-).map((id) => ({ id, label: SOUNDS[id].label }));
+export const SOUND_LIST: {
+  id: SoundId;
+  label: string;
+  bed: boolean;
+}[] = (Object.keys(SOUNDS) as SoundId[]).map((id) => ({
+  id,
+  label: SOUNDS[id].label,
+  bed: SOUNDS[id].bed === true,
+}));
 
 // Which of the app's existing reaction types make a noise.
 //
@@ -309,10 +402,10 @@ export const SOUND_LIST: { id: SoundId; label: string }[] = (
 // wants to be its own short, deliberate, probably paid list rather than a
 // second job for an emoji bar built to be mashed.
 export const SOUND_FOR_REACTION: Record<string, SoundId | undefined> = {
-  bang: "explosion",
+  bang: "thunder",
   booyah: "applause",
-  fire: "airhorn",
-  hundred: "bells",
+  fire: "fog-horn",
+  hundred: "cheers",
 };
 
 // Scale a rendered buffer in place. See TARGET_RMS above for why RMS leads and
@@ -365,6 +458,10 @@ export const createSoundBoard = (options?: {
   let ready = false;
   let lastPlayedAt = 0;
   let rendering: Promise<void> | null = null;
+  // The bed currently running. A new bed replaces it rather than layering on
+  // top — see SoundSpec.bed for why a time-based cooldown cannot do this job.
+  let activeBed: { gain: GainNode; source: AudioBufferSourceNode } | null =
+    null;
   const buffers = new Map<SoundId, AudioBuffer>();
 
   const renderAll = async (live: AudioContext) => {
@@ -441,10 +538,27 @@ export const createSoundBoard = (options?: {
     return ready;
   };
 
+  const stopBed = (at: number) => {
+    if (!activeBed) return;
+    const { gain, source } = activeBed;
+    activeBed = null;
+    try {
+      // Faded rather than cut: stopping thirty seconds of surf dead puts a
+      // click through the PA.
+      gain.gain.cancelScheduledValues(at);
+      gain.gain.setValueAtTime(gain.gain.value, at);
+      gain.gain.linearRampToValueAtTime(0.0001, at + BED_FADE_S);
+      source.stop(at + BED_FADE_S);
+    } catch {
+      // Already finished on its own.
+    }
+  };
+
   const play: SoundBoard["play"] = (id, opts) => {
     if (!ready || !ctx || !master) return false;
     const buffer = buffers.get(id);
     if (!buffer) return false;
+    const spec = SOUNDS[id];
 
     // Global and a drop, not a queue. See the header.
     //
@@ -459,10 +573,29 @@ export const createSoundBoard = (options?: {
       lastPlayedAt = now;
     }
 
+    const at = ctx.currentTime;
+    if (spec.bed) stopBed(at);
+
+    // Its own gain node, so a bed can be trimmed under the one-shots and
+    // faded out when the next one replaces it.
+    const gain = ctx.createGain();
+    gain.gain.value = spec.trim ?? 1;
+    gain.connect(master);
+
     const source = ctx.createBufferSource();
     source.buffer = buffer;
-    source.connect(master);
+    source.connect(gain);
     source.start();
+
+    if (spec.bed) {
+      const entry = { gain, source };
+      activeBed = entry;
+      // Only clear if this is still the current bed — a replacement will have
+      // already taken the slot, and its own onended must not wipe it.
+      source.onended = () => {
+        if (activeBed === entry) activeBed = null;
+      };
+    }
     return true;
   };
 
@@ -472,6 +605,7 @@ export const createSoundBoard = (options?: {
     isReady: () => ready,
     close: () => {
       ready = false;
+      activeBed = null;
       buffers.clear();
       ctx?.close().catch(() => {});
       ctx = null;
