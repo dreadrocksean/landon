@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   collection,
   doc,
@@ -13,6 +19,13 @@ import {
 
 import { db } from "@/lib/gcp/client";
 import { Board, BoardSong, BoardTip, toBoard } from "@/lib/board";
+import {
+  createSoundBoard,
+  SOUND_FOR_REACTION,
+  SOUND_LIST,
+  SoundBoard,
+  SoundId,
+} from "@/lib/soundFx";
 
 interface TvBoardProps {
   code: string;
@@ -215,6 +228,53 @@ const TvBoard: React.FC<TvBoardProps> = ({
     };
   }, [board.recentTip]);
 
+  // Audience sound effects, DARK unless the URL asks for them (?fx=1).
+  //
+  // The board's audio can be patched into the PA, so arming it is a decision
+  // someone makes for a moment on a particular night — not something every
+  // board in the country inherits because this file shipped. The artist-facing
+  // control and the per-sound picks come next; this is the mechanism, landed
+  // behind a flag, the same way the region gate went in.
+  const [fxOn, setFxOn] = useState(false);
+  const [soundReady, setSoundReady] = useState(false);
+  const soundRef = useRef<SoundBoard | null>(null);
+  // Surfaced for tests: a sound leaves no trace on the screen, so without this
+  // the only way to check one fired is to listen to it.
+  const fxSeqRef = useRef(0);
+  const [lastFx, setLastFx] = useState("none");
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("fx") !== "1") return;
+    setFxOn(true);
+    const sounds = createSoundBoard();
+    soundRef.current = sounds;
+    // Try without a gesture first. A kiosk-mode or autoplay-allowed browser
+    // lets this through, and then the venue never sees a prompt at all.
+    let mounted = true;
+    sounds.unlock().then((ok) => {
+      if (mounted) setSoundReady(ok);
+    });
+    return () => {
+      mounted = false;
+      soundRef.current = null;
+      sounds.close();
+    };
+  }, []);
+
+  const enableSound = useCallback(() => {
+    const sounds = soundRef.current;
+    if (!sounds) return;
+    sounds.unlock().then((ok) => {
+      setSoundReady(ok);
+      // Immediate proof it works, and it doubles as the level-setting tone.
+      if (ok) sounds.play("test", { force: true });
+    });
+  }, []);
+
+  const audition = useCallback((id: SoundId) => {
+    soundRef.current?.play(id, { force: true });
+  }, []);
+
   // Flying reactions, mirroring the app's ReactionOverlay. Read straight from
   // artists/{id}/shows/{id}/reactions rather than through publicBoards: they
   // are ephemeral, high-frequency and cosmetic, and routing each one through
@@ -243,6 +303,7 @@ const TvBoard: React.FC<TvBoardProps> = ({
       q,
       (snap) => {
         const fresh: Flyer[] = [];
+        let playedFx: SoundId | null = null;
         snap.docChanges().forEach((change) => {
           if (change.type !== "added") return;
           const data = change.doc.data() as Record<string, any>;
@@ -253,6 +314,13 @@ const TvBoard: React.FC<TvBoardProps> = ({
           flyerSeq.current += 1;
           const seq = flyerSeq.current;
           const isTip = typeof data.amount === "number" && data.amount > 0;
+
+          // Sound rides the same change the flyer does, and costs nothing
+          // extra to reach: no new listener, no new write, no Cloud Function.
+          // play() returns false when the global cooldown swallows it, which
+          // in a busy room is the common case and not an error.
+          const fx = SOUND_FOR_REACTION[String(data.type)];
+          if (fx && soundRef.current?.play(fx)) playedFx = fx;
           fresh.push({
             key: `${change.doc.id}-${seq}`,
             emoji: String(data.emoji || "😄"),
@@ -263,6 +331,10 @@ const TvBoard: React.FC<TvBoardProps> = ({
             duration: 3 + ((seq * 11) % 10) * 0.15,
           });
         });
+        if (playedFx) {
+          fxSeqRef.current += 1;
+          setLastFx(`${playedFx}:${fxSeqRef.current}`);
+        }
         if (!fresh.length) return;
         setFlyers((prev) => [...prev, ...fresh].slice(-40));
       },
@@ -300,6 +372,8 @@ const TvBoard: React.FC<TvBoardProps> = ({
       data-tip={tip?.id ?? "none"}
       data-songs={board.songs.map((x) => x.songId).join(",")}
       data-counts={showCounts ? "shown" : "hidden"}
+      data-sound={fxOn ? (soundReady ? "armed" : "locked") : "off"}
+      data-sound-last={lastFx}
       className="flex h-screen w-screen flex-row justify-start overflow-hidden bg-bg-dark text-white"
     >
       <div className="flex min-w-0 flex-1 flex-col p-[3.2vw] pr-0">
@@ -562,6 +636,46 @@ const TvBoard: React.FC<TvBoardProps> = ({
               <span className="tv-flyer-inner">{f.emoji}</span>
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Sound status, and the engineer's panel. A venue has to be able to
+          tell at a glance whether the room's phones can make a noise right
+          now — audio that has silently fallen back to locked after a TV sleep
+          looks identical to a quiet crowd, and the bit flops with nobody
+          knowing why. */}
+      {fxOn && (
+        <div className="fixed right-[1.2vw] top-[1.2vw] z-30 flex flex-col items-end gap-[0.6vw]">
+          {soundReady ? (
+            <>
+              <span className="rounded-full bg-lime px-[1vw] py-[0.35vw] text-[clamp(0.5rem,0.85vw,1.05rem)] font-bold uppercase tracking-[0.2em] leading-none text-bg-dark">
+                🔊 Sound armed
+              </span>
+              {/* Set the gain before doors, not during a ballad. */}
+              <div className="flex flex-wrap justify-end gap-[0.4vw]">
+                {SOUND_LIST.map((sound) => (
+                  <button
+                    key={sound.id}
+                    type="button"
+                    onClick={() => audition(sound.id)}
+                    className="rounded-[0.4vw] bg-light-dark/80 px-[0.7vw] py-[0.3vw] text-[clamp(0.45rem,0.75vw,0.95rem)] font-bold uppercase tracking-[0.1em] leading-none text-white hover:bg-light-dark focus:outline-none focus-visible:ring-[0.2vw] focus-visible:ring-lime"
+                  >
+                    {sound.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* A real button, because this gets pressed with a TV remote as
+               often as a finger — it has to be reachable by focus. */
+            <button
+              type="button"
+              onClick={enableSound}
+              className="rounded-full bg-rose px-[1.2vw] py-[0.5vw] text-[clamp(0.55rem,0.95vw,1.2rem)] font-bold uppercase tracking-[0.15em] leading-none text-white focus:outline-none focus-visible:ring-[0.25vw] focus-visible:ring-lime"
+            >
+              🔇 Press to enable sound
+            </button>
+          )}
         </div>
       )}
 
