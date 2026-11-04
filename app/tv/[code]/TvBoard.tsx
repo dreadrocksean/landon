@@ -53,6 +53,16 @@ const CONFETTI_TOTAL_MS = (CONFETTI_FALL_S * 2 + 0.4) * 1000;
 // decided to get the app.
 const CELEBRATION_MAX_LEFT = 66;
 
+// Below this many votes on the leader, the board shows the race but not the
+// numbers. The same reasoning as the money total further down: a tally in
+// six-inch type is social proof once it is large and an announcement that the
+// room is empty while it is small, and early in the night it is always small.
+// The bar behind each row already carries who is winning and by how much,
+// which is the part that works at any size. Gated on the LEADER's count, not
+// each song's, so the numbers arrive together rather than popping in one row
+// at a time, and so the sidebar total never contradicts the rows.
+const VOTE_DISPLAY_FLOOR = 10;
+
 const CONFETTI = Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
   // Golden-ratio stride scatters the columns instead of banding them, which
   // a simple (i * k) % 100 does as soon as k divides evenly into 100.
@@ -162,6 +172,8 @@ const TvBoard: React.FC<TvBoardProps> = ({
     () => board.songs.reduce((max, song) => Math.max(max, song.votes), 0),
     [board.songs]
   );
+
+  const showCounts = topVotes >= VOTE_DISPLAY_FLOOR;
 
   // Fanfare. In the app, a fan's pick reaching #1 fires confetti once per
   // climb — never on mount. The room equivalent is a song breaking into the
@@ -287,6 +299,7 @@ const TvBoard: React.FC<TvBoardProps> = ({
       data-entrant={entrant?.songId ?? "none"}
       data-tip={tip?.id ?? "none"}
       data-songs={board.songs.map((x) => x.songId).join(",")}
+      data-counts={showCounts ? "shown" : "hidden"}
       className="flex h-screen w-screen flex-row justify-start overflow-hidden bg-bg-dark text-white"
     >
       <div className="flex min-w-0 flex-1 flex-col p-[3.2vw] pr-0">
@@ -355,9 +368,11 @@ const TvBoard: React.FC<TvBoardProps> = ({
                       </span>
                     )}
                   </span>
-                  <span className="relative shrink-0 text-[clamp(1.1rem,2.8vw,3.75rem)] font-bold leading-none text-lime tabular-nums">
-                    {song.votes}
-                  </span>
+                  {showCounts && (
+                    <span className="relative shrink-0 text-[clamp(1.1rem,2.8vw,3.75rem)] font-bold leading-none text-lime tabular-nums">
+                      {song.votes}
+                    </span>
+                  )}
                 </li>
               ))}
             </ol>
@@ -425,7 +440,7 @@ const TvBoard: React.FC<TvBoardProps> = ({
         <p className="text-center text-[clamp(0.65rem,1.2vw,1.6rem)] leading-tight text-cyan">
           Request songs, react and tip the band — live.
         </p>
-        {board.totalVotes > 0 && (
+        {showCounts && board.totalVotes > 0 && (
           <p className="text-center text-[clamp(0.65rem,1.2vw,1.6rem)] font-bold leading-tight text-lime">
             {board.totalVotes} vote{board.totalVotes === 1 ? "" : "s"} tonight
           </p>
