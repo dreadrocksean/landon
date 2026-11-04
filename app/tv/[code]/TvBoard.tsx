@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 import { db } from "@/lib/gcp/client";
-import { Board, BoardSong, toBoard } from "@/lib/board";
+import { Board, BoardSong, BoardTip, toBoard } from "@/lib/board";
 
 interface TvBoardProps {
   code: string;
@@ -17,6 +17,17 @@ interface TvBoardProps {
 // screen alike, with clamp() keeping it sane if someone opens it on a laptop.
 
 const STEPS = ["Scan the code", "Request a song", "Watch it climb"];
+
+// Fixed, not random: the page is server-rendered, and a random list would
+// differ between the server HTML and hydration.
+const CONFETTI_COLORS = ["#ffd000", "#f33274", "#35e8b4", "#8a6fe0", "#ffffff"];
+const CONFETTI = Array.from({ length: 28 }, (_, i) => ({
+  left: (i * 37) % 100,
+  size: 0.9 + ((i * 7) % 5) * 0.25,
+  color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+  delay: ((i * 13) % 10) / 20,
+  duration: 2.2 + ((i * 5) % 7) * 0.2,
+}));
 
 const TvBoard: React.FC<TvBoardProps> = ({
   code,
@@ -127,6 +138,31 @@ const TvBoard: React.FC<TvBoardProps> = ({
   const seenRef = useRef<Set<string> | null>(null);
   const [entrant, setEntrant] = useState<BoardSong | null>(null);
 
+  // A tip outranks a Top-5 entry: it is the rarer, louder moment, and the one
+  // the room is being invited to copy.
+  const lastTipRef = useRef<string | null>(null);
+  // Primed-ness has to be its own flag. Using "lastTipRef is still null" as
+  // the first-paint test swallowed the FIRST tip of the night on a board that
+  // opened with none — which is the case that matters most.
+  const tipPrimedRef = useRef(false);
+  const [tip, setTip] = useState<BoardTip | null>(null);
+
+  useEffect(() => {
+    const current = board.recentTip;
+    // Prime on first paint so a board opened mid-set does not replay the last
+    // tip of the night as if it had just landed.
+    if (!tipPrimedRef.current) {
+      tipPrimedRef.current = true;
+      lastTipRef.current = current?.id ?? null;
+      return;
+    }
+    if (!current || current.id === lastTipRef.current) return;
+    lastTipRef.current = current.id;
+    setTip(current);
+    const timer = setTimeout(() => setTip(null), 8000);
+    return () => clearTimeout(timer);
+  }, [board.recentTip]);
+
   useEffect(() => {
     const ids = board.songs.map((song) => song.songId);
     if (seenRef.current === null) {
@@ -150,6 +186,7 @@ const TvBoard: React.FC<TvBoardProps> = ({
       /* Surfaced for tests: the celebration is a 6s window that is awkward to
          catch by scraping text, and these make it observable. */
       data-entrant={entrant?.songId ?? "none"}
+      data-tip={tip?.id ?? "none"}
       data-songs={board.songs.map((x) => x.songId).join(",")}
       className="flex h-screen w-screen flex-row justify-start overflow-hidden bg-bg-dark text-white"
     >
@@ -294,12 +331,55 @@ const TvBoard: React.FC<TvBoardProps> = ({
             {board.totalVotes} vote{board.totalVotes === 1 ? "" : "s"} tonight
           </p>
         )}
+
+        {/* Status that lasts the night, rather than six seconds. In votes,
+            not dollars: a running money total turns the wall into a
+            fundraising thermometer and makes a quiet night look like a
+            failure in public. */}
+        {board.topSupporter && (
+          <p className="text-center text-[clamp(0.6rem,1.1vw,1.5rem)] leading-tight text-cyan">
+            Top supporter&nbsp;
+            <span className="font-bold text-[#ffd000]">
+              {board.topSupporter.name}
+            </span>
+            &nbsp;· {board.topSupporter.votes} votes
+          </p>
+        )}
       </aside>
 
       {/* The fanfare. Sized to be read from the back of the room rather than
           leaned into — a venue screen gets a glance, not attention. Clears
           itself after 6s. */}
-      {entrant && (
+      {/* The celebration slot. A tip outranks a Top-5 entry, so only one
+          thing is ever on screen. Bottom-anchored: at the top it covered the
+          artist's name. */}
+      {tip ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-10 flex justify-center">
+          <div className="tv-entrant flex max-w-[86vw] items-center gap-[1.4vw] rounded-t-[1vw] bg-[#ffd000] px-[2.4vw] py-[1.1vw] text-bg-dark shadow-2xl">
+            <span className="shrink-0 text-[clamp(1rem,2.4vw,3.2rem)] leading-none">
+              🎉
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[clamp(1rem,2.3vw,3.1rem)] font-bold leading-tight">
+                {tip.name}
+                {tip.votes > 0 && (
+                  <span className="font-bold"> · +{tip.votes} votes</span>
+                )}
+              </span>
+              {tip.songTitle && (
+                <span className="block truncate text-[clamp(0.7rem,1.4vw,1.9rem)] font-bold leading-tight">
+                  {tip.songTitle}
+                </span>
+              )}
+              {tip.message && (
+                <span className="block truncate text-[clamp(0.65rem,1.25vw,1.7rem)] italic leading-tight opacity-80">
+                  &ldquo;{tip.message}&rdquo;
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
+      ) : entrant ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-10 flex justify-center">
           <div className="tv-entrant flex max-w-[80vw] items-center gap-[1.2vw] rounded-t-[1vw] bg-lime px-[2.4vw] py-[1.1vw] text-bg-dark shadow-2xl">
             <span className="shrink-0 text-[clamp(1rem,2.2vw,3rem)] leading-none">
@@ -314,6 +394,29 @@ const TvBoard: React.FC<TvBoardProps> = ({
               </span>
             </span>
           </div>
+        </div>
+      ) : null}
+
+      {/* Confetti, tips only. Kept rare so it still means something, and
+          built from a handful of divs rather than a canvas library: the board
+          runs on a TV stick, and transform/opacity keyframes stay on the GPU
+          where a canvas loop would not. */}
+      {tip && (
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-20 overflow-hidden">
+          {CONFETTI.map((piece, i) => (
+            <span
+              key={i}
+              className="tv-confetti absolute top-[-6vh] block"
+              style={{
+                left: `${piece.left}%`,
+                width: `${piece.size}vh`,
+                height: `${piece.size * 1.6}vh`,
+                backgroundColor: piece.color,
+                animationDelay: `${piece.delay}s`,
+                animationDuration: `${piece.duration}s`,
+              }}
+            />
+          ))}
         </div>
       )}
 

@@ -41,6 +41,23 @@ export interface BoardSong {
   votes: number;
 }
 
+// A tip the board may announce. Names and messages are already filtered
+// server-side (functions/src/tvBoard/shoutout.js) — the page renders what it
+// is given and does no vetting of its own, same as the rest of the board.
+export interface BoardTip {
+  id: string;
+  name: string;
+  votes: number;
+  message: string | null;
+  songTitle: string | null;
+  at: number;
+}
+
+export interface BoardSupporter {
+  name: string;
+  votes: number;
+}
+
 export interface Board {
   artistId: string;
   artistName: string;
@@ -50,6 +67,8 @@ export interface Board {
   venueName: string | null;
   songs: BoardSong[];
   totalVotes: number;
+  recentTip: BoardTip | null;
+  topSupporter: BoardSupporter | null;
 }
 
 // Shape an arbitrary Firestore document into the Board the page renders,
@@ -72,4 +91,24 @@ export const toBoard = (data: Record<string, any>): Board => ({
       }))
     : [],
   totalVotes: typeof data.totalVotes === "number" ? data.totalVotes : 0,
+  recentTip: data.recentTip?.id
+    ? {
+        id: String(data.recentTip.id),
+        name: String(data.recentTip.name ?? "Someone"),
+        votes:
+          typeof data.recentTip.votes === "number" ? data.recentTip.votes : 0,
+        message: data.recentTip.message ?? null,
+        songTitle: data.recentTip.songTitle ?? null,
+        at: typeof data.recentTip.at === "number" ? data.recentTip.at : 0,
+      }
+    : null,
+  topSupporter: data.topSupporter?.name
+    ? {
+        name: String(data.topSupporter.name),
+        votes:
+          typeof data.topSupporter.votes === "number"
+            ? data.topSupporter.votes
+            : 0,
+      }
+    : null,
 });

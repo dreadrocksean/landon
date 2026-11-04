@@ -69,3 +69,30 @@ body::-webkit-scrollbar-thumb {
     opacity: 0;
   }
 }
+
+/* Confetti for a tip shoutout. Transform and opacity only, so it stays on
+   the compositor — a venue TV stick has little CPU to spare and the board
+   must keep its Firestore stream responsive while this runs. */
+.tv-confetti {
+  animation-name: tvConfetti;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  border-radius: 1px;
+}
+
+@keyframes tvConfetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(112vh) rotate(540deg);
+    opacity: 0;
+  }
+}
