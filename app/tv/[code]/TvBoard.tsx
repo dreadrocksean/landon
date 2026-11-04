@@ -262,13 +262,6 @@ const TvBoard: React.FC<TvBoardProps> = ({
     return () => unsub();
   }, [board.artistId, board.showId]);
 
-  // Reap finished flyers so the list cannot grow without bound over a set.
-  useEffect(() => {
-    if (!flyers.length) return;
-    const id = setTimeout(() => setFlyers((prev) => prev.slice(1)), 1200);
-    return () => clearTimeout(id);
-  }, [flyers]);
-
   useEffect(() => {
     const ids = board.songs.map((song) => song.songId);
     if (seenRef.current === null) {
@@ -540,11 +533,18 @@ const TvBoard: React.FC<TvBoardProps> = ({
               style={{
                 left: `${f.left}%`,
                 fontSize: `${f.size}vh`,
-                animationDuration: `${f.duration}s`,
+                ["--tv-dur" as string]: `${f.duration}s`,
                 ["--tv-drift" as string]: `${f.drift}vw`,
               }}
+              // Each flyer retires itself the instant it finishes, instead of
+              // a timer sweeping the list: the sweep re-rendered every flyer
+              // on screen on a fixed cadence, which is its own source of
+              // dropped frames mid-flight.
+              onAnimationEnd={() =>
+                setFlyers((prev) => prev.filter((x) => x.key !== f.key))
+              }
             >
-              {f.emoji}
+              <span className="tv-flyer-inner">{f.emoji}</span>
             </span>
           ))}
         </div>

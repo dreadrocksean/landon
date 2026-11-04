@@ -97,30 +97,58 @@ body::-webkit-scrollbar-thumb {
   }
 }
 
-/* Flying audience reactions, mirroring the app's ReactionOverlay: a punchy
-   launch that eases into a drift as it fades. Rises from the bottom edge so
-   it never sits over the artist's name. */
+/* Flying audience reactions, mirroring the app's ReactionOverlay.
+
+   Split into two animations on purpose. A CSS timing function is applied to
+   EVERY keyframe interval, not once across the animation, so a single
+   keyframe list of 0/12/70/100 eased the motion three separate times and
+   produced a visible hitch at each boundary. The rise is now two keyframes
+   with one continuous curve, and the pop/fade rides an inner element on a
+   linear curve where re-easing cannot show. */
 .tv-flyer {
-  animation-name: tvFlyer;
-  animation-timing-function: cubic-bezier(0.17, 0.67, 0.35, 1);
+  animation-name: tvFlyerRise;
+  animation-duration: var(--tv-dur, 3s);
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation-fill-mode: forwards;
+  will-change: transform;
+}
+
+.tv-flyer-inner {
+  display: block;
+  animation-name: tvFlyerPop;
+  animation-duration: var(--tv-dur, 3s);
+  animation-timing-function: linear;
   animation-fill-mode: forwards;
   will-change: transform, opacity;
 }
 
-@keyframes tvFlyer {
+@keyframes tvFlyerRise {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(var(--tv-drift, 0), -92vh, 0);
+  }
+}
+
+@keyframes tvFlyerPop {
   0% {
-    transform: translate3d(0, 0, 0) scale(0.6);
     opacity: 0;
+    transform: scale(0.6);
   }
-  12% {
-    transform: translate3d(0, -14vh, 0) scale(1.1);
+  9% {
     opacity: 1;
+    transform: scale(1.12);
   }
-  70% {
+  20% {
+    transform: scale(1);
+  }
+  72% {
     opacity: 1;
   }
   100% {
-    transform: translate3d(var(--tv-drift, 0), -92vh, 0) scale(1);
     opacity: 0;
+    transform: scale(1);
   }
 }
+
