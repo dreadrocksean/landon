@@ -530,7 +530,18 @@ const TvBoard: React.FC<TvBoardProps> = ({
             <span className="font-bold text-[#ffd000]">
               {board.topSupporter.name}
             </span>
-            &nbsp;· {board.topSupporter.votes} votes
+            {/* Behind the same floor as every other number, and for a
+                sharper version of the same reason: this line sits directly
+                under the QR code, so it is what someone reads while deciding
+                whether to join. "· 2 votes" there tells them the room is
+                empty. The name alone still says somebody is backing the
+                band, which is the part worth showing early. */}
+            {showCounts && (
+              <>
+                &nbsp;· {board.topSupporter.votes} vote
+                {board.topSupporter.votes === 1 ? "" : "s"}
+              </>
+            )}
           </p>
         )}
       </aside>
