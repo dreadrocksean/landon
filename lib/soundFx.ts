@@ -96,8 +96,11 @@ interface SoundSpec {
   render?: (ctx: RenderCtx) => void;
   // A BED runs for ten to thirty seconds under the band rather than landing
   // as a hit. Two differences follow, both enforced in play():
-  //   - only one plays at a time, and a new one fades the old out, because a
-  //     cooldown measured in seconds cannot stop 30s beds from stacking;
+  //   - it never stacks on ITSELF: starting a bed fades out that same bed's
+  //     previous run, because a cooldown measured in seconds cannot stop a
+  //     30s texture from piling up on top of itself. Different beds DO
+  //     layer — rain under a battle is a scene, and the one-slot-for-all
+  //     version of this cut a long rain off whenever anything else started;
   //   - it is trimmed below the one-shots. Levelling everything to one target
   //     is right for hits, but a wash of surf matched to the loudness of a
   //     thunder clap sits on top of the band instead of behind it.
@@ -613,10 +616,24 @@ export const createSoundBoard = (options?: {
   let master: GainNode | null = null;
   let ready = false;
   let rendering: Promise<void> | null = null;
-  // The bed currently running. A new bed replaces it rather than layering on
-  // top — see SoundSpec.bed for why a time-based cooldown cannot do this job.
-  let activeBed: { gain: GainNode; source: AudioBufferSourceNode } | null =
-    null;
+  // The bed currently running FOR EACH ID, not one slot for all of them.
+  //
+  // A single slot meant any bed killed any other, which is wrong twice over:
+  // it cut a twenty-five second rain off two seconds in because somebody
+  // pressed Large crowd, and Large crowd is not even weather — it is a crowd
+  // sound that happens to be long, which is exactly the case `bed` and `kind`
+  // are kept separate to describe. Rain under a battle is a scene; rain
+  // deleted by a cheer is a fault.
+  //
+  // What the slot was actually protecting against is one bed stacking on
+  // ITSELF, and keying by id still does that. The ceiling is one instance per
+  // bed id, and the room-wide ambience budget decides how fast they can
+  // arrive, so the worst case is a handful of textures layered — a
+  // soundscape, not a pile-up.
+  const activeBeds = new Map<
+    SoundId,
+    { gain: GainNode; source: AudioBufferSourceNode }
+  >();
   const buffers = new Map<SoundId, AudioBuffer[]>();
   // The variant each family played last, so the next pick can avoid it.
   const lastVariant = new Map<SoundId, number>();
@@ -716,10 +733,11 @@ export const createSoundBoard = (options?: {
     return ready;
   };
 
-  const stopBed = (at: number) => {
-    if (!activeBed) return;
-    const { gain, source } = activeBed;
-    activeBed = null;
+  const stopBed = (id: SoundId, at: number) => {
+    const running = activeBeds.get(id);
+    if (!running) return;
+    const { gain, source } = running;
+    activeBeds.delete(id);
     try {
       // Faded rather than cut: stopping thirty seconds of surf dead puts a
       // click through the PA.
@@ -756,7 +774,9 @@ export const createSoundBoard = (options?: {
     }
 
     const at = ctx.currentTime;
-    if (spec.bed) stopBed(at);
+    // Only this bed's own previous run, so starting one texture never cuts a
+    // different one that is still playing.
+    if (spec.bed) stopBed(id, at);
 
     // Its own gain node, so a bed can be trimmed under the one-shots and
     // faded out when the next one replaces it.
@@ -774,11 +794,12 @@ export const createSoundBoard = (options?: {
 
     if (spec.bed) {
       const entry = { gain, source };
-      activeBed = entry;
-      // Only clear if this is still the current bed — a replacement will have
-      // already taken the slot, and its own onended must not wipe it.
+      activeBeds.set(id, entry);
+      // Only clear if this is still the entry for that id — a replacement
+      // will have already taken the slot, and the outgoing run's onended
+      // (which fires after its fade) must not wipe its successor.
       source.onended = () => {
-        if (activeBed === entry) activeBed = null;
+        if (activeBeds.get(id) === entry) activeBeds.delete(id);
       };
     }
     return true;
@@ -795,7 +816,7 @@ export const createSoundBoard = (options?: {
     isReady: () => ready,
     close: () => {
       ready = false;
-      activeBed = null;
+      activeBeds.clear();
       buffers.clear();
       ctx?.close().catch(() => {});
       ctx = null;
