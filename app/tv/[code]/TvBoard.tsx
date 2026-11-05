@@ -794,6 +794,16 @@ const TvBoard: React.FC<TvBoardProps> = ({
                     className="rounded-[0.4vw] bg-light-dark/80 px-[0.7vw] py-[0.3vw] text-[clamp(0.45rem,0.75vw,0.95rem)] font-bold uppercase tracking-[0.1em] leading-none text-white hover:bg-light-dark focus:outline-none focus-visible:ring-[0.2vw] focus-visible:ring-lime"
                   >
                     {sound.label}
+                    {/* The take count, shown only where there is a choice to
+                        make. Dropping a file into public/sfx is meant to be a
+                        soundcheck-speed change, and this is the only way to
+                        confirm it landed without mashing the button and
+                        waiting to hear something new. */}
+                    {sound.variants > 1 && (
+                      <span className="ml-[0.35vw] font-normal text-lime">
+                        ×{sound.variants}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>

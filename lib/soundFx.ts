@@ -16,13 +16,25 @@
 //  3. Everything is levelled on the way in, so the first sound of the night
 //     can't set the engineer's gain and the second one take the roof off.
 //
-// The sounds are SYNTHESIZED rather than loaded. For a first pass that buys a
-// lot: no asset pipeline, no licensing, nothing to pull over a venue's wifi,
-// and no chance of a half-loaded buffer firing silently mid-set. They are
-// frankly placeholders — a real soundboard wants recordings, and "We love you
-// Landon!" can only ever be a recording — so `url` is the seam for when those
-// arrive, and a fetched sound is levelled by the same path.
+// Sounds come in FAMILIES, not one file per button. A button is a family and
+// a press picks a variant at random, because the thing that makes an effect
+// annoying is not the effect, it is hearing the IDENTICAL waveform forty
+// times in a night. Four takes of a cheer is a crowd; one take of a cheer
+// four times is a sample. Governance limits how OFTEN a sound fires; families
+// are what make the firings it does allow bearable.
+//
+// The families are read off a generated manifest (lib/sfxManifest.ts), built
+// from whatever is sitting in public/sfx. Adding a variant is dropping a file
+// in that folder named after the button plus a number — no count to update
+// here, nothing to keep in sync, which matters because these grow during a
+// soundcheck rather than during a sprint.
+//
+// Synthesis survives only as a FALLBACK. It was the whole implementation when
+// there were no recordings; now a spec with a `render` uses it when every
+// variant in its family fails to load, so a bad deploy or a dead wifi degrades
+// to a placeholder instead of to a dead button.
 
+import { SFX_FAMILIES } from "./sfxManifest.ts";
 import {
   createRoomGovernor,
   DEFAULT_PRESET,
@@ -40,6 +52,7 @@ export type SoundId =
   | "fog-horn"
   | "shh"
   | "xmas-bells"
+  | "explosion"
   | "we-love-you-landon"
   | "we-love-you-adrian"
   | "we-love-you-guys"
@@ -52,6 +65,7 @@ export type SoundId =
   | "night-forest"
   | "large-crowd"
   | "rain"
+  | "battle"
   // Not a sound effect — the engineer's reference tone.
   | "test";
 
@@ -74,12 +88,10 @@ interface SoundSpec {
   label: string;
   // Only needed to size the offline render for a synthesized sound.
   seconds: number;
-  // A spec carrying `url` prefers the recording and falls back to the synth if
-  // the fetch fails, so a missing file degrades to a placeholder rather than
-  // to silence. Ids with no synth at all simply go quiet, which is why the
-  // ones that have a plausible stand-in keep theirs.
+  // Used when the family has no files, or when every file in it fails to
+  // load. Ids with no synth at all simply go quiet, which is why the ones
+  // with a plausible stand-in keep theirs.
   render?: (ctx: RenderCtx) => void;
-  url?: string;
   // A BED runs for ten to thirty seconds under the band rather than landing
   // as a hit. Two differences follow, both enforced in play():
   //   - only one plays at a time, and a new one fades the old out, because a
@@ -161,13 +173,10 @@ const envelope = (
   return gain;
 };
 
-const SFX = "/sfx";
-
 const SOUNDS: Record<SoundId, SoundSpec> = {
   thunder: {
     label: "Thunder",
     seconds: 1.9,
-    url: `${SFX}/thunder.mp3`,
     render: (ctx) => {
       const noise = noiseSource(ctx, 1.9, 3);
       const lp = ctx.createBiquadFilter();
@@ -201,7 +210,6 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
   applause: {
     label: "Applause",
     seconds: 2.8,
-    url: `${SFX}/applause.m4a`,
     render: (ctx) => {
       const claps = burstSource(ctx, {
         seconds: 2.8,
@@ -223,12 +231,11 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
     },
   },
 
-  cheers: { label: "Cheers", seconds: 5, url: `${SFX}/cheers.mp3` },
+  cheers: { label: "Cheers", seconds: 5 },
 
   "fog-horn": {
     label: "Fog horn",
     seconds: 1.5,
-    url: `${SFX}/fog-horn.mp3`,
     render: (ctx) => {
       const out = envelope(ctx, {
         attack: 0.03,
@@ -258,7 +265,6 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
   shh: {
     label: "Shhhhh",
     seconds: 1.5,
-    url: `${SFX}/shh.mp3`,
     render: (ctx) => {
       const noise = noiseSource(ctx, 1.5, 23);
       const bp = ctx.createBiquadFilter();
@@ -279,7 +285,6 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
   "xmas-bells": {
     label: "Xmas bells",
     seconds: 2.2,
-    url: `${SFX}/xmas-bells.mp3`,
     render: (ctx) => {
       const jingle = burstSource(ctx, {
         seconds: 2.2,
@@ -320,6 +325,11 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
     },
   },
 
+  // 12 to 15 seconds of tail, which is why it carries its own cooldown in the
+  // governor: the `hit` default is 6s and would let one explosion start on top
+  // of the last one still decaying.
+  explosion: { label: "Explosion", seconds: 13 },
+
   // Named chants. These are the ones with no synthesized stand-in and no
   // generic fallback — a wrong name is worse than silence — and the reason
   // the catalogue will eventually have to be resolved per artist rather than
@@ -327,17 +337,14 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
   "we-love-you-landon": {
     label: "We love you Landon",
     seconds: 4,
-    url: `${SFX}/we-love-you-landon.mp3`,
   },
   "we-love-you-adrian": {
     label: "We love you Adrian",
     seconds: 4,
-    url: `${SFX}/we-love-you-adrian.mp3`,
   },
   "we-love-you-guys": {
     label: "We love you guys",
     seconds: 4,
-    url: `${SFX}/we-love-you-guys.mp3`,
   },
 
   // Hecklers. Recordings only, for the same reason the chants are: a human
@@ -348,48 +355,42 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
   freebird: {
     label: "Freebird!",
     seconds: 2.5,
-    url: `${SFX}/freebird.wav`,
   },
   boo: {
     label: "Boooo",
     seconds: 2.5,
-    url: `${SFX}/boo.wav`,
   },
 
   breeze: {
     label: "Breeze",
     seconds: 30,
-    url: `${SFX}/breeze.mp3`,
     bed: true,
     trim: BED_TRIM,
   },
   surf: {
     label: "Surf",
     seconds: 15,
-    url: `${SFX}/surf.mp3`,
     bed: true,
     trim: BED_TRIM,
   },
   "night-forest": {
     label: "Night forest",
     seconds: 15,
-    url: `${SFX}/night-forest.mp3`,
     bed: true,
     trim: BED_TRIM,
   },
   "large-crowd": {
     label: "Large crowd",
     seconds: 10,
-    url: `${SFX}/large-crowd.mp3`,
     bed: true,
     trim: BED_TRIM,
   },
 
-  // The one sound in here with no `url` at all, and the only one that does not
-  // want one. Every other synth is a placeholder apologising for a missing
-  // recording; rain IS filtered noise, so this is the same thing a recording
-  // would be, minus twenty seconds of audio over a venue's wifi. Give it a
-  // url only if someone turns up with a recording that genuinely beats it.
+  // The synth here is the one that is not an apology. Rain IS filtered noise,
+  // so this reads as weather rather than as a stand-in — which is why it was
+  // the only sound originally shipped without a file. It now has recordings
+  // and they win, but this stays as the fallback precisely because it is good
+  // enough to go to air unnoticed.
   rain: {
     label: "Rain",
     seconds: 20,
@@ -438,6 +439,11 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
     },
   },
 
+  // Battle ambience for a scene — the artist asked for this against the
+  // Revolutionary Etude, which is the clearest statement yet that beds are
+  // not just weather.
+  battle: { label: "Battle", seconds: 20, bed: true, trim: BED_TRIM },
+
   test: {
     label: "Test tone",
     seconds: 1.2,
@@ -463,10 +469,16 @@ export const SOUND_LIST: {
   id: SoundId;
   label: string;
   bed: boolean;
+  // How many takes the button will choose between. Surfaced on the operator
+  // panel so that dropping a file into public/sfx can be CONFIRMED at the
+  // desk — otherwise the only way to tell a new variant loaded is to mash the
+  // button and listen for something you have not heard yet.
+  variants: number;
 }[] = (Object.keys(SOUNDS) as SoundId[]).map((id) => ({
   id,
   label: SOUNDS[id].label,
   bed: SOUNDS[id].bed === true,
+  variants: SFX_FAMILIES[id]?.length || (SOUNDS[id].render ? 1 : 0),
 }));
 
 // Which of the app's existing reaction types make a noise.
@@ -523,6 +535,29 @@ const level = (buffer: AudioBuffer) => {
   }
 };
 
+// Random, but never twice running. Naive random repeats one time in N, and a
+// back-to-back repeat is the exact thing a family exists to prevent — it is
+// also the only repeat anyone actually notices. So the draw is taken from the
+// OTHER variants rather than re-rolled until it differs, which stays uniform
+// over them instead of quietly biasing toward whatever was not played last.
+//
+// Pure, and exported, because the index shift below is the one line here that
+// can be wrong in a way nobody hears: an off-by-one would drop a take out of
+// the rotation for the whole show and still sound fine.
+export const pickNextVariant = (
+  last: number | undefined,
+  count: number,
+  rand: () => number = Math.random
+): number => {
+  if (count <= 1) return 0;
+  // With a previous pick to avoid there are count-1 candidates; the shift maps
+  // [0, count-2] onto [0, count-1] with `last` removed.
+  const span = last === undefined ? count : count - 1;
+  let i = Math.floor(rand() * span);
+  if (last !== undefined && i >= last) i += 1;
+  return i;
+};
+
 export interface SoundBoard {
   // Must be called from a user gesture the first time. Resolves to whether
   // the board can actually make a noise.
@@ -575,7 +610,14 @@ export const createSoundBoard = (options?: {
   // top — see SoundSpec.bed for why a time-based cooldown cannot do this job.
   let activeBed: { gain: GainNode; source: AudioBufferSourceNode } | null =
     null;
-  const buffers = new Map<SoundId, AudioBuffer>();
+  const buffers = new Map<SoundId, AudioBuffer[]>();
+  // The variant each family played last, so the next pick can avoid it.
+  const lastVariant = new Map<SoundId, number>();
+  const pickVariant = (id: SoundId, count: number): number => {
+    const i = pickNextVariant(lastVariant.get(id), count);
+    lastVariant.set(id, i);
+    return i;
+  };
 
   const renderAll = async (live: AudioContext) => {
     const Offline =
@@ -590,18 +632,34 @@ export const createSoundBoard = (options?: {
     await Promise.all(
       (Object.keys(SOUNDS) as SoundId[]).map(async (id) => {
         const spec = SOUNDS[id];
-        if (spec.url) {
-          try {
-            const res = await fetch(spec.url);
-            const bytes = await res.arrayBuffer();
-            const decoded = await live.decodeAudioData(bytes);
-            level(decoded);
-            buffers.set(id, decoded);
+        const urls = SFX_FAMILIES[id] ?? [];
+
+        if (urls.length) {
+          // Each variant is levelled on its OWN, not as a family. They are
+          // separate takes at whatever level they were recorded, so matching
+          // them individually to the target is what stops a random pick from
+          // being a volume lottery through a rig at gig level.
+          const decoded = await Promise.all(
+            urls.map(async (url) => {
+              try {
+                const res = await fetch(url);
+                const buffer = await live.decodeAudioData(await res.arrayBuffer());
+                level(buffer);
+                return buffer;
+              } catch {
+                return null;
+              }
+            })
+          );
+          const loaded = decoded.filter((b): b is AudioBuffer => b !== null);
+          if (loaded.length) {
+            buffers.set(id, loaded);
             return;
-          } catch {
-            // Fall through to the synth rather than leaving a silent slot.
           }
+          // Every variant failed. Fall through to the synth rather than
+          // leaving a dead button on the panel.
         }
+
         if (!spec.render) return;
         const offline = new Offline(
           1,
@@ -611,7 +669,7 @@ export const createSoundBoard = (options?: {
         spec.render(offline);
         const rendered = await offline.startRendering();
         level(rendered);
-        buffers.set(id, rendered);
+        buffers.set(id, [rendered]);
       })
     );
   };
@@ -669,8 +727,8 @@ export const createSoundBoard = (options?: {
 
   const play: SoundBoard["play"] = (id, opts) => {
     if (!ready || !ctx || !master) return false;
-    const buffer = buffers.get(id);
-    if (!buffer) return false;
+    const family = buffers.get(id);
+    if (!family?.length) return false;
     const spec = SOUNDS[id];
 
     // A drop, not a queue. See the header — a queue only moves the pile-up
@@ -700,7 +758,10 @@ export const createSoundBoard = (options?: {
     gain.connect(master);
 
     const source = ctx.createBufferSource();
-    source.buffer = buffer;
+    // Picked AFTER governance, so a drop does not burn a variant: otherwise a
+    // blocked press would still advance the no-repeat state and the next
+    // allowed press could repeat what the room last actually heard.
+    source.buffer = family[pickVariant(id, family.length)];
     source.connect(gain);
     source.start();
 

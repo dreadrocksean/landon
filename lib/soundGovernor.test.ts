@@ -12,7 +12,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SOUND_LIST } from './soundFx.ts';
+import { SOUND_LIST, pickNextVariant } from './soundFx.ts';
 import {
   createRoomGovernor,
   resolvePlaying,
@@ -244,5 +244,98 @@ describe('rain', () => {
     const g = createRoomGovernor();
     assert.equal(g.tryPlay('rain', at(T0)).ok, true);
     assert.equal(reasonOf(g.tryPlay('surf', at(T0 + 1000))), 'budget');
+  });
+});
+
+
+// A button is a FAMILY and a press picks a take. The shift that skips the
+// previous pick is the one line in the engine that can be wrong without
+// anybody hearing it: drop a take out of the rotation and the board still
+// sounds fine, just less varied than it is supposed to be.
+describe('variant picker', () => {
+  test('a family of one always plays its only take', () => {
+    for (const last of [undefined, 0]) {
+      assert.equal(pickNextVariant(last, 1, () => 0.99), 0);
+    }
+  });
+
+  test('never repeats the previous take', () => {
+    for (let count = 2; count <= 6; count += 1) {
+      for (let last = 0; last < count; last += 1) {
+        for (let r = 0; r < 100; r += 1) {
+          const i = pickNextVariant(last, count, () => r / 100);
+          assert.notEqual(i, last, `count=${count} last=${last} r=${r}`);
+          assert.ok(i >= 0 && i < count, `out of range: ${i}`);
+        }
+      }
+    }
+  });
+
+  test('can still reach every other take', () => {
+    // The off-by-one this guards: a shift applied on the wrong side of the
+    // comparison excludes an index permanently rather than just the last one.
+    const count = 4;
+    for (let last = 0; last < count; last += 1) {
+      const seen = new Set<number>();
+      for (let r = 0; r < 1000; r += 1) {
+        seen.add(pickNextVariant(last, count, () => r / 1000));
+      }
+      const expected = [0, 1, 2, 3].filter((i) => i !== last);
+      assert.deepEqual([...seen].sort(), expected, `last=${last}`);
+    }
+  });
+
+  test('with no history every take is reachable', () => {
+    const seen = new Set<number>();
+    for (let r = 0; r < 1000; r += 1) {
+      seen.add(pickNextVariant(undefined, 3, () => r / 1000));
+    }
+    assert.deepEqual([...seen].sort(), [0, 1, 2]);
+  });
+
+  test('a random() of almost 1 stays in range', () => {
+    // Math.random() is [0,1), but a stubbed or patched rand is not always, and
+    // an index one past the end is a silent no-op play rather than a throw.
+    assert.ok(pickNextVariant(undefined, 4, () => 0.9999999) < 4);
+    assert.ok(pickNextVariant(2, 4, () => 0.9999999) < 4);
+  });
+
+  test('draws uniformly over the takes it is allowed', () => {
+    const count = 4;
+    const last = 1;
+    const counts = [0, 0, 0, 0];
+    for (let r = 0; r < 300; r += 1) {
+      counts[pickNextVariant(last, count, () => r / 300)] += 1;
+    }
+    assert.equal(counts[last], 0);
+    for (const i of [0, 2, 3]) {
+      assert.equal(counts[i], 100, `index ${i} got ${counts[i]}`);
+    }
+  });
+});
+
+// The manifest is generated from whatever is in public/sfx, so these assert
+// the WIRING rather than the contents — a family that loses its files should
+// fail here, not at a gig.
+describe('sound families', () => {
+  test('cheers has grown into a real family', () => {
+    const cheers = SOUND_LIST.find((s) => s.id === 'cheers');
+    assert.ok(cheers);
+    assert.ok(cheers.variants > 1, `expected >1 take, got ${cheers.variants}`);
+  });
+
+  test('every button has at least one take or a synth to fall back on', () => {
+    const dead = SOUND_LIST.filter((s) => s.variants === 0).map((s) => s.id);
+    assert.deepEqual(dead, [], `buttons with nothing to play: ${dead}`);
+  });
+
+  test('the new ids are wired to the board', () => {
+    for (const id of ['battle', 'explosion', 'rain']) {
+      const entry = SOUND_LIST.find((s) => s.id === id);
+      assert.ok(entry, `${id} missing from SOUND_LIST`);
+      assert.ok(entry.variants >= 1, `${id} has no takes`);
+    }
+    assert.equal(SOUND_KIND.explosion, 'hit');
+    assert.equal(SOUND_KIND.battle, 'ambience');
   });
 });

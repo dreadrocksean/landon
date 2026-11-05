@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test lib/*.test.ts"
+    "test": "node --test lib/*.test.ts",
+    "predev": "node scripts/buildSfxManifest.mjs",
+    "prebuild": "node scripts/buildSfxManifest.mjs",
+    "sfx": "node scripts/buildSfxManifest.mjs",
+    "pretest": "node scripts/buildSfxManifest.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.844.0",

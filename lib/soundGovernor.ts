@@ -41,6 +41,7 @@ export const SOUND_KIND: Record<SoundId, SoundKind> = {
   thunder: "hit",
   "fog-horn": "hit",
   "xmas-bells": "hit",
+  explosion: "hit",
   shh: "hit",
   "we-love-you-landon": "phrase",
   "we-love-you-adrian": "phrase",
@@ -49,6 +50,7 @@ export const SOUND_KIND: Record<SoundId, SoundKind> = {
   surf: "ambience",
   "night-forest": "ambience",
   rain: "ambience",
+  battle: "ambience",
   freebird: "heckle",
   boo: "heckle",
   // The engineer's reference tone is never governed — it is only ever played
@@ -142,6 +144,10 @@ const SOUND_RULE: Partial<Record<SoundId, Partial<SoundRule>>> = {
   // A room-wide "quiet down" only works if it is rare. Mashed, it IS the noise
   // it is asking for.
   shh: { maxPerShow: 2 },
+  // Its takes run 12 to 15 seconds of decay. The `hit` default of 6s would
+  // let the next explosion start while the last one is still falling, which
+  // is mud rather than punctuation.
+  explosion: { cooldownMs: 16000 },
 };
 
 export const ruleFor = (
