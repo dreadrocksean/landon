@@ -113,7 +113,16 @@ interface SoundSpec {
 const BED_TRIM = 0.55;
 
 // Long enough for the longest bed to be cut off cleanly rather than clicking.
+// This is the INTERRUPTION fade — short on purpose, because the point of a
+// replacement is that the new bed takes over.
 const BED_FADE_S = 0.25;
+
+// The fade a bed gets as it reaches its own end, which is a different job.
+// A recording stops when the recording stops, and a wash of surf that simply
+// ceases mid-breath reads as a fault in the PA rather than as weather
+// passing. Seconds, not milliseconds — this one is meant to be heard as the
+// sound leaving, so it is roughly the length of a slow hand on a fader.
+const BED_TAIL_FADE_S = 2;
 
 // Deterministic noise. The same seed gives the same sound every render, so a
 // change to one of these is an actual change rather than a different roll of
@@ -520,7 +529,7 @@ export const SOUND_FOR_REACTION: Record<string, SoundId | undefined> = {
 
 // Scale a rendered buffer in place. See TARGET_RMS above for why RMS leads and
 // the peak only clamps.
-const level = (buffer: AudioBuffer) => {
+const level = (buffer: AudioBuffer): number => {
   let sumSquares = 0;
   let peak = 0;
   let count = 0;
@@ -534,15 +543,50 @@ const level = (buffer: AudioBuffer) => {
       count += 1;
     }
   }
-  if (!count || peak === 0) return;
+  if (!count || peak === 0) return 0;
   const rms = Math.sqrt(sumSquares / count);
   let gain = rms > 0 ? TARGET_RMS / rms : 1;
   if (peak * gain > PEAK_CEILING) gain = PEAK_CEILING / peak;
-  if (gain === 1) return;
+  if (gain === 1) return rms;
   for (let c = 0; c < buffer.numberOfChannels; c += 1) {
     const data = buffer.getChannelData(c);
     for (let i = 0; i < data.length; i += 1) data[i] *= gain;
   }
+  return rms * gain;
+};
+
+// Does this recording stop dead, or has someone already faded it?
+//
+// Worth asking per file rather than fading everything, because the answer is
+// genuinely mixed: of the beds shipped here, breeze, surf, large-crowd and
+// battle all taper on their own, while night-forest and both rains run at
+// full level into the last sample. A blanket fade would leave the first group
+// double-faded and would eat the tail of battle, which is still doing
+// something two seconds from the end.
+//
+// Measured against the level the buffer was just normalised to, so it does
+// not care how loud the source was.
+const TAIL_WINDOW_S = 0.5;
+const TAIL_HOT_RATIO = 0.45;
+
+const endsAbruptly = (buffer: AudioBuffer, levelled: number): boolean => {
+  const frames = Math.min(
+    buffer.length,
+    Math.ceil(TAIL_WINDOW_S * buffer.sampleRate)
+  );
+  if (frames < 1 || levelled <= 0) return false;
+  let sumSquares = 0;
+  let count = 0;
+  for (let c = 0; c < buffer.numberOfChannels; c += 1) {
+    const data = buffer.getChannelData(c);
+    for (let i = data.length - frames; i < data.length; i += 1) {
+      const v = data[i];
+      sumSquares += v * v;
+      count += 1;
+    }
+  }
+  if (!count) return false;
+  return Math.sqrt(sumSquares / count) > levelled * TAIL_HOT_RATIO;
 };
 
 // Random, but never twice running. Naive random repeats one time in N, and a
@@ -635,6 +679,10 @@ export const createSoundBoard = (options?: {
     { gain: GainNode; source: AudioBufferSourceNode }
   >();
   const buffers = new Map<SoundId, AudioBuffer[]>();
+  // Which buffers stop dead and therefore need a tail fade scheduled. Decided
+  // once at load, where the audio is already being walked for levelling,
+  // rather than on every press.
+  const needsTailFade = new WeakMap<AudioBuffer, boolean>();
   // The variant each family played last, so the next pick can avoid it.
   const lastVariant = new Map<SoundId, number>();
   const pickVariant = (id: SoundId, count: number): number => {
@@ -668,7 +716,7 @@ export const createSoundBoard = (options?: {
               try {
                 const res = await fetch(url);
                 const buffer = await live.decodeAudioData(await res.arrayBuffer());
-                level(buffer);
+                needsTailFade.set(buffer, endsAbruptly(buffer, level(buffer)));
                 return buffer;
               } catch {
                 return null;
@@ -692,7 +740,7 @@ export const createSoundBoard = (options?: {
         );
         spec.render(offline);
         const rendered = await offline.startRendering();
-        level(rendered);
+        needsTailFade.set(rendered, endsAbruptly(rendered, level(rendered)));
         buffers.set(id, [rendered]);
       })
     );
@@ -779,20 +827,37 @@ export const createSoundBoard = (options?: {
     if (spec.bed) stopBed(id, at);
 
     // Its own gain node, so a bed can be trimmed under the one-shots and
-    // faded out when the next one replaces it.
+    // faded independently of everything else running.
     const gain = ctx.createGain();
-    gain.gain.value = spec.trim ?? 1;
+    const trim = spec.trim ?? 1;
+    gain.gain.setValueAtTime(trim, at);
     gain.connect(master);
 
     const source = ctx.createBufferSource();
     // Picked AFTER governance, so a drop does not burn a variant: otherwise a
     // blocked press would still advance the no-repeat state and the next
     // allowed press could repeat what the room last actually heard.
-    source.buffer = family[pickVariant(id, family.length)];
+    const buffer = family[pickVariant(id, family.length)];
+    source.buffer = buffer;
     source.connect(gain);
-    source.start();
+    // Started at the same clock reading the fades are scheduled against, so
+    // the tail lands on the end of the buffer rather than near it.
+    source.start(at);
 
     if (spec.bed) {
+      // Only the beds that stop dead. Any bed, including large-crowd, whose
+      // kind is `crowd` but which is mechanically the same long texture as
+      // the weather and would end just as hard.
+      //
+      // Clamped against the buffer, so a bed shorter than the fade spends a
+      // third of itself fading rather than starting already on the way out.
+      if (needsTailFade.get(buffer)) {
+        const runFor = buffer.duration;
+        const fade = Math.min(BED_TAIL_FADE_S, runFor / 3);
+        gain.gain.setValueAtTime(trim, at + runFor - fade);
+        gain.gain.linearRampToValueAtTime(0.0001, at + runFor);
+      }
+
       const entry = { gain, source };
       activeBeds.set(id, entry);
       // Only clear if this is still the entry for that id — a replacement
