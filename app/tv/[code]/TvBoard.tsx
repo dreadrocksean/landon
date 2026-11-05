@@ -29,6 +29,7 @@ import {
 } from "@/lib/soundFx";
 import {
   DEFAULT_PRESET,
+  type SoundKind,
   isSoundPresetId,
   PRESENCE_FRESH_MS,
   resolvePlaying,
@@ -108,6 +109,19 @@ const CELEBRATION_MAX_LEFT = 66;
 // each song's, so the numbers arrive together rather than popping in one row
 // at a time, and so the sidebar total never contradicts the rows.
 const VOTE_DISPLAY_FLOOR = 10;
+
+// How the preview panel is ordered and labelled. Mirrors KIND_GROUPS in the
+// client's src/config/soundFx.ts so the engineer at the desk and the fan on
+// the phone are reading the same catalogue in the same order — the desk has
+// to be able to answer "where's the one they just pressed?" without
+// translating between two layouts.
+const PANEL_GROUPS: { kind: SoundKind; title: string }[] = [
+  { kind: "crowd", title: "Crowd" },
+  { kind: "hit", title: "Hits" },
+  { kind: "heckle", title: "Hecklers" },
+  { kind: "phrase", title: "Chants" },
+  { kind: "ambience", title: "Ambience" },
+];
 
 const CONFETTI = Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
   // Golden-ratio stride scatters the columns instead of banding them, which
@@ -784,29 +798,87 @@ const TvBoard: React.FC<TvBoardProps> = ({
                   🔇 Muted by artist
                 </span>
               )}
-              {/* Set the gain before doors, not during a ballad. */}
-              <div className="flex flex-wrap justify-end gap-[0.4vw]">
-                {SOUND_LIST.map((sound) => (
-                  <button
-                    key={sound.id}
-                    type="button"
-                    onClick={() => audition(sound.id)}
-                    className="rounded-[0.4vw] bg-light-dark/80 px-[0.7vw] py-[0.3vw] text-[clamp(0.45rem,0.75vw,0.95rem)] font-bold uppercase tracking-[0.1em] leading-none text-white hover:bg-light-dark focus:outline-none focus-visible:ring-[0.2vw] focus-visible:ring-lime"
-                  >
-                    {sound.label}
-                    {/* The take count, shown only where there is a choice to
-                        make. Dropping a file into public/sfx is meant to be a
-                        soundcheck-speed change, and this is the only way to
-                        confirm it landed without mashing the button and
-                        waiting to hear something new. */}
-                    {sound.variants > 1 && (
-                      <span className="ml-[0.35vw] font-normal text-lime">
-                        ×{sound.variants}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
+              {/* Set the gain before doors, not during a ballad.
+
+                  Nobody in the room ever sees this: ?fx=1 gates the sound
+                  board and this panel together, so the screen the audience
+                  watches has neither. It is one person's tool on one laptop.
+
+                  Folded away regardless, for that person's sake. Seventeen
+                  buttons in a flex-wrap row was a wall with no order to scan,
+                  and it sat on top of the standings and the join QR — which
+                  the engineer is also watching, on the same screen, all
+                  night. Collapsed it costs one line; open, the groups match
+                  the fan's picker so "where's the one they just pressed?" is
+                  one glance.
+
+                  <details> rather than state, because it is keyboard- and
+                  remote-focusable for free, survives a re-render on its own,
+                  and does not close when something inside it is clicked —
+                  which matters when auditioning is the whole point. */}
+              <details className="group w-[22vw] min-w-[13rem] overflow-hidden rounded-[0.5vw] border border-light-dark bg-bg-overly text-right shadow-[0_0.3vw_1vw_rgba(0,0,0,0.5)]">
+                <summary className="cursor-pointer list-none rounded-[0.5vw] px-[0.8vw] py-[0.4vw] text-[clamp(0.45rem,0.75vw,0.95rem)] font-bold uppercase tracking-[0.15em] leading-none text-cyan hover:text-white focus:outline-none focus-visible:ring-[0.2vw] focus-visible:ring-lime">
+                  <span className="inline-block transition-transform group-open:rotate-90">
+                    ▸
+                  </span>{" "}
+                  Preview sounds
+                </summary>
+
+                <div className="max-h-[70vh] overflow-y-auto px-[0.6vw] pb-[0.6vw]">
+                  {/* Pinned above the catalogue, and styled apart from it,
+                      because it is not an effect — it is the reference tone
+                      for setting a channel's gain, and it is the first thing
+                      reached for and the only one with a wrong time to press
+                      it. Burying it among the hits made it a needle. */}
+                  {SOUND_LIST.filter((s) => s.id === "test").map((sound) => (
+                    <button
+                      key={sound.id}
+                      type="button"
+                      onClick={() => audition(sound.id)}
+                      className="mb-[0.5vw] w-full rounded-[0.4vw] border border-lime/50 px-[0.7vw] py-[0.35vw] text-[clamp(0.45rem,0.75vw,0.95rem)] font-bold uppercase tracking-[0.1em] leading-none text-lime hover:bg-lime/10 focus:outline-none focus-visible:ring-[0.2vw] focus-visible:ring-lime"
+                    >
+                      {sound.label}
+                    </button>
+                  ))}
+
+                  {PANEL_GROUPS.map(({ kind, title }) => {
+                    const items = SOUND_LIST.filter(
+                      (s) => s.kind === kind && s.id !== "test"
+                    );
+                    if (!items.length) return null;
+                    return (
+                      <div key={kind} className="mt-[0.4vw]">
+                        <div className="px-[0.1vw] pb-[0.25vw] text-[clamp(0.4rem,0.62vw,0.8rem)] font-bold uppercase tracking-[0.25em] text-cyan/50">
+                          {title}
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-[0.3vw]">
+                          {items.map((sound) => (
+                            <button
+                              key={sound.id}
+                              type="button"
+                              onClick={() => audition(sound.id)}
+                              className="rounded-[0.4vw] bg-light-dark/80 px-[0.6vw] py-[0.3vw] text-[clamp(0.45rem,0.72vw,0.9rem)] font-bold uppercase tracking-[0.1em] leading-none text-white hover:bg-light-dark focus:outline-none focus-visible:ring-[0.2vw] focus-visible:ring-lime"
+                            >
+                              {sound.label}
+                              {/* The take count, shown only where there is a
+                                  choice to make. Dropping a file into
+                                  public/sfx is meant to be a soundcheck-speed
+                                  change, and this is the only way to confirm
+                                  it landed without mashing the button and
+                                  waiting to hear something new. */}
+                              {sound.variants > 1 && (
+                                <span className="ml-[0.3vw] font-normal text-lime">
+                                  ×{sound.variants}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </details>
             </>
           ) : (
             /* A real button, because this gets pressed with a TV remote as

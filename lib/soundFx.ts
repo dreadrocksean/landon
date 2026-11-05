@@ -37,6 +37,8 @@
 import { SFX_FAMILIES } from "./sfxManifest.ts";
 import {
   createRoomGovernor,
+  SOUND_KIND,
+  type SoundKind,
   DEFAULT_PRESET,
   type RoomGovernor,
   type SoundDecision,
@@ -469,6 +471,10 @@ export const SOUND_LIST: {
   id: SoundId;
   label: string;
   bed: boolean;
+  // Carried so the operator panel can group the buttons the same way the
+  // fan's picker does. Seventeen buttons in one row is a wall; the same
+  // seventeen under Crowd / Hits / Hecklers / Chants / Ambience is a menu.
+  kind: SoundKind;
   // How many takes the button will choose between. Surfaced on the operator
   // panel so that dropping a file into public/sfx can be CONFIRMED at the
   // desk — otherwise the only way to tell a new variant loaded is to mash the
@@ -478,6 +484,7 @@ export const SOUND_LIST: {
   id,
   label: SOUNDS[id].label,
   bed: SOUNDS[id].bed === true,
+  kind: SOUND_KIND[id],
   variants: SFX_FAMILIES[id]?.length || (SOUNDS[id].render ? 1 : 0),
 }));
 
