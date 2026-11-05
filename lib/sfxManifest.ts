@@ -11,7 +11,7 @@ export const SFX_FAMILIES: Record<string, readonly string[]> = {
     "/sfx/battle3.mp3",
   ],
   "boo": [
-    "/sfx/boo.wav",
+    "/sfx/boo.m4a",
   ],
   "breeze": [
     "/sfx/breeze.mp3",
@@ -30,7 +30,7 @@ export const SFX_FAMILIES: Record<string, readonly string[]> = {
     "/sfx/fog-horn.mp3",
   ],
   "freebird": [
-    "/sfx/freebird.wav",
+    "/sfx/freebird.m4a",
   ],
   "large-crowd": [
     "/sfx/large-crowd.mp3",
