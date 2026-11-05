@@ -139,7 +139,11 @@ const PANEL_GROUPS: { kind: SoundKind; title: string }[] = [
 const CONFETTI = Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
   // Golden-ratio stride scatters the columns instead of banding them, which
   // a simple (i * k) % 100 does as soon as k divides evenly into 100.
-  left: (i * 61.803) % CELEBRATION_MAX_LEFT,
+  // Full width, unlike the flyers. Confetti only ever falls during a tip,
+  // and the tip splash already dims and blurs the whole screen — nobody is
+  // scanning the QR for those seven seconds either way, so keeping the right
+  // third bare just made the celebration look lopsided.
+  left: (i * 61.803) % 100,
   size: 0.8 + ((i * 7) % 6) * 0.22,
   color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
   delay: (i / CONFETTI_COUNT) * CONFETTI_FALL_S,
@@ -716,29 +720,53 @@ const TvBoard: React.FC<TvBoardProps> = ({
           thing is ever on screen. Bottom-anchored: at the top it covered the
           artist's name. */}
       {tip ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-10 flex justify-center">
-          <div className="tv-entrant flex max-w-[86vw] items-center gap-[1.4vw] rounded-t-[1vw] bg-[#ffd000] px-[2.4vw] py-[1.1vw] text-bg-dark shadow-2xl">
-            <span className="shrink-0 text-[clamp(1rem,2.4vw,3.2rem)] leading-none">
+        /* A tip takes the whole screen for a few seconds.
+
+           It used to be a bar along the bottom, which is the right weight
+           for the Top-5 entrant below and the wrong weight for this: tipping
+           is the rarest thing that happens all night and the only one where
+           somebody paid. A strip at the ankles asks the room to notice. This
+           does not ask.
+
+           Sits UNDER the confetti (z-10 against z-20) so the pieces fall in
+           front of the card rather than behind it, and under the engineer's
+           panel, which must stay reachable even mid-fanfare.
+
+           No dollar figure, by design — the public payload carries votes and
+           a shoutout name and deliberately not an amount. What the room
+           should see is that someone moved a song up, not what they paid. */
+        <div className="pointer-events-none fixed inset-0 z-10 flex items-center justify-center">
+          <div className="absolute inset-0 bg-bg-dark/80 backdrop-blur-[0.3vw]" />
+          <div className="tv-tip relative mx-[4vw] max-w-[72vw] rounded-[1.2vw] border-[0.25vw] border-[#ffd000] bg-bg-overly px-[4vw] py-[2.6vw] text-center shadow-[0_1vw_4vw_rgba(0,0,0,0.7)]">
+            <div className="tv-tip-pop text-[clamp(2rem,6vw,8rem)] leading-none">
               🎉
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[clamp(1rem,2.3vw,3.1rem)] font-bold leading-tight">
-                {tip.name}
-                {tip.votes > 0 && (
-                  <span className="font-bold"> · +{tip.votes} votes</span>
-                )}
-              </span>
-              {tip.songTitle && (
-                <span className="block truncate text-[clamp(0.7rem,1.4vw,1.9rem)] font-bold leading-tight">
-                  {tip.songTitle}
-                </span>
-              )}
-              {tip.message && (
-                <span className="block truncate text-[clamp(0.65rem,1.25vw,1.7rem)] italic leading-tight opacity-80">
-                  &ldquo;{tip.message}&rdquo;
-                </span>
-              )}
-            </span>
+            </div>
+
+            <div className="mt-[1vw] text-[clamp(0.6rem,1.1vw,1.5rem)] font-bold uppercase leading-none tracking-[0.4em] text-[#ffd000]">
+              Tipped the band
+            </div>
+
+            <div className="mt-[0.8vw] break-words text-[clamp(1.6rem,5vw,7rem)] font-bold leading-none text-white">
+              {tip.name}
+            </div>
+
+            {tip.votes > 0 && (
+              <div className="mt-[1.2vw] inline-block rounded-full bg-[#ffd000] px-[2vw] py-[0.6vw] text-[clamp(1rem,2.6vw,3.6rem)] font-bold leading-none text-bg-dark">
+                +{tip.votes} {tip.votes === 1 ? "vote" : "votes"}
+              </div>
+            )}
+
+            {tip.songTitle && (
+              <div className="mt-[1.2vw] text-[clamp(0.9rem,2vw,2.8rem)] font-bold leading-tight text-lime">
+                {tip.songTitle}
+              </div>
+            )}
+
+            {tip.message && (
+              <div className="mt-[0.8vw] text-[clamp(0.8rem,1.6vw,2.2rem)] italic leading-tight text-white/75">
+                &ldquo;{tip.message}&rdquo;
+              </div>
+            )}
           </div>
         </div>
       ) : entrant ? (

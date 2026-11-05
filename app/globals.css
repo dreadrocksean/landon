@@ -179,3 +179,59 @@ body::-webkit-scrollbar-thumb {
 .tv-callout {
   animation: tv-callout-in 4.5s ease-out forwards;
 }
+
+/* The tip takeover. Three beats: punch in, hold while it is read from the
+   back of the room, then get out of the way. Timed to 7s against the
+   component's own 8s clear, so the card is gone before React unmounts it and
+   nothing ever blinks out at full opacity.
+
+   The overshoot on the way in is the whole point — a card that merely fades
+   up reads as a notification, and this is supposed to read as a moment. */
+@keyframes tvTip {
+  0% {
+    opacity: 0;
+    transform: scale(0.82) translateY(2vh);
+  }
+  5% {
+    opacity: 1;
+    transform: scale(1.04) translateY(0);
+  }
+  9% {
+    transform: scale(1);
+  }
+  88% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.97) translateY(-1vh);
+  }
+}
+
+.tv-tip {
+  animation: tvTip 7s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+/* The emoji gets its own bounce so the card does not have to carry the
+   energy on its own. Finishes early and sits still, because a thing that
+   keeps moving while you read the name underneath it is just noise. */
+@keyframes tvTipPop {
+  0% {
+    transform: scale(0.4) rotate(-18deg);
+  }
+  12% {
+    transform: scale(1.25) rotate(8deg);
+  }
+  20% {
+    transform: scale(1) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.tv-tip-pop {
+  display: inline-block;
+  animation: tvTipPop 7s ease-out forwards;
+}
