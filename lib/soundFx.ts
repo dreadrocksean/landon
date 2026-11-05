@@ -30,7 +30,7 @@ import {
   type SoundDecision,
   type SoundPlaying,
   type SoundPresetId,
-} from "./soundGovernor";
+} from "./soundGovernor.ts";
 
 export type SoundId =
   // One-shots: a punctuation mark on something happening on stage.
@@ -43,11 +43,15 @@ export type SoundId =
   | "we-love-you-landon"
   | "we-love-you-adrian"
   | "we-love-you-guys"
+  // Hecklers: a single voice from the room, landing in a gap.
+  | "freebird"
+  | "boo"
   // Beds: ambience that runs for ten to thirty seconds under the band.
   | "breeze"
   | "surf"
   | "night-forest"
   | "large-crowd"
+  | "rain"
   // Not a sound effect — the engineer's reference tone.
   | "test";
 
@@ -336,6 +340,22 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
     url: `${SFX}/we-love-you-guys.mp3`,
   },
 
+  // Hecklers. Recordings only, for the same reason the chants are: a human
+  // voice is the entire content here, and there is no oscillator arrangement
+  // that reads as a man shouting across a room rather than as a broken synth.
+  // A fetch failure leaves these silent, which is the right failure — a
+  // wrong-sounding heckle is worse than a missing one.
+  freebird: {
+    label: "Freebird!",
+    seconds: 2.5,
+    url: `${SFX}/freebird.wav`,
+  },
+  boo: {
+    label: "Boooo",
+    seconds: 2.5,
+    url: `${SFX}/boo.wav`,
+  },
+
   breeze: {
     label: "Breeze",
     seconds: 30,
@@ -363,6 +383,59 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
     url: `${SFX}/large-crowd.mp3`,
     bed: true,
     trim: BED_TRIM,
+  },
+
+  // The one sound in here with no `url` at all, and the only one that does not
+  // want one. Every other synth is a placeholder apologising for a missing
+  // recording; rain IS filtered noise, so this is the same thing a recording
+  // would be, minus twenty seconds of audio over a venue's wifi. Give it a
+  // url only if someone turns up with a recording that genuinely beats it.
+  rain: {
+    label: "Rain",
+    seconds: 20,
+    bed: true,
+    trim: BED_TRIM,
+    render: (ctx) => {
+      // Faded in rather than switched on. Every other bed is a recording that
+      // the encoder happened to start quietly; this one would otherwise
+      // arrive as a step, which through a PA is a thump.
+      const out = ctx.createGain();
+      out.gain.setValueAtTime(0.0001, 0);
+      out.gain.linearRampToValueAtTime(1, 0.6);
+      out.connect(ctx.destination);
+
+      // Two layers, because neither is rain on its own: the wash alone is a
+      // radio between stations, and the drops alone are a leaking tap.
+      const wash = noiseSource(ctx, 20, 41);
+      const hp = ctx.createBiquadFilter();
+      hp.type = "highpass";
+      hp.frequency.value = 700;
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 7000;
+      const washTrim = ctx.createGain();
+      washTrim.gain.value = 0.8;
+      wash.connect(hp).connect(lp).connect(washTrim).connect(out);
+      wash.start(0);
+
+      // Individual drops hitting something hard. Deliberately sparse — push
+      // the count up and they smear back into the wash, which costs CPU to
+      // render and changes nothing you can hear.
+      const drops = burstSource(ctx, {
+        seconds: 20,
+        count: 900,
+        decay: 0.012,
+        seed: 42,
+      });
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 3200;
+      bp.Q.value = 0.9;
+      const dropTrim = ctx.createGain();
+      dropTrim.gain.value = 0.5;
+      drops.connect(bp).connect(dropTrim).connect(out);
+      drops.start(0);
+    },
   },
 
   test: {

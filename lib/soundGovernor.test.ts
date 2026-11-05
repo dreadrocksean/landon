@@ -12,9 +12,11 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
+import { SOUND_LIST } from './soundFx.ts';
 import {
   createRoomGovernor,
   resolvePlaying,
+  SOUND_KIND,
   type SoundBlockReason,
   type SoundDecision,
   ARTIST_SIGNAL_STALE_MS,
@@ -174,5 +176,73 @@ describe('resolvePlaying', () => {
     assert.equal(resolvePlaying({}, T0), null);
     const g = createRoomGovernor('listening-room');
     assert.equal(g.check('thunder', at(T0, null)).ok, true);
+  });
+});
+
+
+// Hecklers are the first kind to actually use the when-gate, so the gate and
+// the kind are tested together. Numbers must match the client suite's
+// 'hecklers wait for a gap' block.
+describe('hecklers', () => {
+  test('wait for a gap, and are spent after twice a night', () => {
+    const g = createRoomGovernor();
+    assert.equal(reasonOf(g.check('freebird', at(T0, true))), 'when');
+    assert.equal(g.tryPlay('freebird', at(T0, false)).ok, true);
+    assert.equal(g.tryPlay('freebird', at(T0 + 200_000, false)).ok, true);
+    assert.equal(
+      reasonOf(g.tryPlay('freebird', at(T0 + 400_000, false))),
+      'spent'
+    );
+  });
+
+  test('still fire when nobody knows whether a song is on', () => {
+    const g = createRoomGovernor();
+    assert.equal(g.tryPlay('freebird', at(T0, null)).ok, true);
+  });
+
+  test('stop a second heckler riding in behind the first', () => {
+    // Different sound, so no per-sound cooldown applies — the kind budget is
+    // the only thing between one gag and a comedy club.
+    const g = createRoomGovernor();
+    assert.equal(g.tryPlay('freebird', at(T0, false)).ok, true);
+    assert.deepEqual(g.tryPlay('boo', at(T0 + 1000, false)), {
+      ok: false,
+      reason: 'budget',
+      retryInMs: 44_000,
+    });
+    assert.equal(g.tryPlay('boo', at(T0 + 45_000, false)).ok, true);
+  });
+
+  test('dueling pianos heckles over the playing, uncapped', () => {
+    const g = createRoomGovernor('dueling-pianos');
+    for (let i = 0; i < 5; i += 1) {
+      assert.equal(g.tryPlay('freebird', at(T0 + i * 30_000, true)).ok, true);
+    }
+  });
+
+  test('a listening room gets exactly one all night', () => {
+    const g = createRoomGovernor('listening-room');
+    assert.equal(g.tryPlay('freebird', at(T0, false)).ok, true);
+    assert.equal(
+      reasonOf(g.tryPlay('freebird', at(T0 + 600_000, false))),
+      'spent'
+    );
+  });
+});
+
+// Rain is the only bed with no `url`, so a typo in its spec would show up as
+// silence at a gig rather than as a build error.
+describe('rain', () => {
+  test('is an ambience bed the board knows how to render', () => {
+    const rain = SOUND_LIST.find((s) => s.id === 'rain');
+    assert.ok(rain, 'rain missing from the catalogue');
+    assert.equal(rain.bed, true);
+    assert.equal(SOUND_KIND.rain, 'ambience');
+  });
+
+  test('shares the ambience clock rather than getting its own', () => {
+    const g = createRoomGovernor();
+    assert.equal(g.tryPlay('rain', at(T0)).ok, true);
+    assert.equal(reasonOf(g.tryPlay('surf', at(T0 + 1000))), 'budget');
   });
 });

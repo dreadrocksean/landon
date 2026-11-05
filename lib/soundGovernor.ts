@@ -25,11 +25,14 @@ import type { SoundId } from "./soundFx";
 //   ambience — mashing produces a bed, already handled by one-at-a-time.
 //   hit      — mashing is annoying. Punctuation wants space.
 //   phrase   — mashing is a riot. Two spoken lines at once are neither.
+//   heckle   — one voice, and that is the whole joke. "FREEBIRD!" works
+//              because exactly one person shouted it into a quiet room.
+//              Rarity and TIMING are the content, so it is gated to the gaps.
 //
 // Deliberately NOT the same axis as `bed`, which is playback mechanics.
 // `large-crowd` is mechanically a bed and behaviourally crowd noise, and needs
 // the bed's playback with the crowd's freedom.
-export type SoundKind = "crowd" | "ambience" | "hit" | "phrase";
+export type SoundKind = "crowd" | "ambience" | "hit" | "phrase" | "heckle";
 
 export const SOUND_KIND: Record<SoundId, SoundKind> = {
   applause: "crowd",
@@ -45,6 +48,9 @@ export const SOUND_KIND: Record<SoundId, SoundKind> = {
   breeze: "ambience",
   surf: "ambience",
   "night-forest": "ambience",
+  rain: "ambience",
+  freebird: "heckle",
+  boo: "heckle",
   // The engineer's reference tone is never governed — it is only ever played
   // forced, and a board that refused to prove it works would be useless.
   test: "hit",
@@ -71,6 +77,10 @@ export const KIND_RULE: Record<SoundKind, SoundRule> = {
   ambience: { cooldownMs: 8000, scope: "room", when: "any" },
   hit: { cooldownMs: 6000, scope: "room", when: "any" },
   phrase: { cooldownMs: 60000, scope: "room", when: "any", maxPerShow: 3 },
+  // The strictest line in the table. A heckle that can be fired on demand is
+  // not a heckle, it is a soundboard — so it waits for a gap, and twice a
+  // night is already generous. Presets loosen this; nothing tightens it.
+  heckle: { cooldownMs: 90000, scope: "room", when: "between", maxPerShow: 2 },
 };
 
 // The density brake, and the rule per-sound cooldowns cannot express: twenty
@@ -82,6 +92,7 @@ export const ROOM_BUDGET_MS: Record<SoundKind, number> = {
   ambience: 8000,
   hit: 2500,
   phrase: 20000,
+  heckle: 45000,
 };
 
 // Per-show overrides, because the right amount of governance is a property of
@@ -102,15 +113,19 @@ export const SOUND_PRESETS: Record<
       hit: { when: "between", cooldownMs: 20000 },
       phrase: { when: "between", maxPerShow: 2 },
       ambience: { when: "between" },
+      heckle: { maxPerShow: 1 },
     },
-    budget: { hit: 15000, phrase: 60000 },
+    budget: { hit: 15000, phrase: 60000, heckle: 120000 },
   },
   "dueling-pianos": {
     rule: {
       hit: { cooldownMs: 2500 },
       phrase: { cooldownMs: 15000, maxPerShow: null },
+      // The one room where shouting over the playing is the act rather than
+      // an interruption, so the gap requirement comes off entirely.
+      heckle: { when: "any", cooldownMs: 25000, maxPerShow: null },
     },
-    budget: { hit: 1500, phrase: 6000 },
+    budget: { hit: 1500, phrase: 6000, heckle: 12000 },
   },
 };
 
