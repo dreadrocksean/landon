@@ -241,52 +241,141 @@ body::-webkit-scrollbar-thumb {
    this board runs on whatever laptop the venue has, and a dropped frame in
    the middle of a song is more noticeable than the effect is worth. */
 
-/* Lightning. TWO flashes and done — see VISUAL_GAP_MS in lib/soundVisuals.ts
-   for why the count matters. The gap between them is uneven because real
-   lightning stutters, and the screen settles to black well before the
-   thunder it rides has finished. */
-@keyframes tvLightning {
-  0%,
-  4% {
-    opacity: 0;
-  }
-  5% {
-    opacity: 0.92;
-  }
-  11% {
-    opacity: 0.05;
-  }
-  19% {
-    opacity: 0.78;
-  }
-  27% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 0;
-  }
-}
+/* Lightning.
+   Built for a LIT ROOM. The screen is not the only light source in a bar, so
+   a polite 90%-opacity wash just looks like the panel glitched — these go to
+   full and lean blue-white, which is the colour real lightning actually is.
 
-.tv-lightning {
-  animation: tvLightning 1.4s ease-out forwards;
-}
-
-/* The explosion. One flash, warmer and heavier than lightning, with a longer
-   falloff so it reads as a blast rather than a camera shutter. */
-@keyframes tvFlash {
+   Three stages, unevenly spaced, because a single clean rectangle is the
+   tell that it is fake: a faint leader, the main return stroke, then a
+   weaker flicker as it dies. Onset is near-instant and the decay is long,
+   which is the opposite of a fade and the reason it reads as a strike. */
+@keyframes tvLightningSky {
   0% {
     opacity: 0;
   }
-  4% {
+  2% {
+    opacity: 0.35;
+  }
+  5% {
+    opacity: 0.04;
+  }
+  7% {
     opacity: 1;
+  }
+  16% {
+    opacity: 0.22;
+  }
+  19% {
+    opacity: 0.66;
+  }
+  34% {
+    opacity: 0.05;
+  }
+  48%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.tv-lightning-sky {
+  background: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    #dce9ff 28%,
+    #9dbcf5 62%,
+    rgba(120, 160, 230, 0) 100%
+  );
+  animation: tvLightningSky 1.4s linear forwards;
+}
+
+/* The strike itself: a hot off-centre core that blooms with the main stage
+   and nothing else. Offset because lightning comes from somewhere — dead
+   centre reads as a vignette. */
+@keyframes tvLightningCore {
+  0%,
+  6% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  8% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  22% {
+    opacity: 0.12;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+.tv-lightning-core {
+  background: radial-gradient(
+    ellipse 55% 70% at 68% 12%,
+    #ffffff 0%,
+    rgba(214, 232, 255, 0.85) 30%,
+    rgba(150, 190, 255, 0) 70%
+  );
+  animation: tvLightningCore 1.4s ease-out forwards;
+}
+
+/* The explosion. Warmer, heavier and slower to let go than lightning — a
+   blast keeps burning for a moment where a strike snaps off. Full opacity
+   for the same lit-room reason. */
+@keyframes tvFlashWash {
+  0% {
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.55;
   }
   100% {
     opacity: 0;
   }
 }
 
-.tv-flash {
-  animation: tvFlash 1s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+.tv-flash-wash {
+  background: linear-gradient(
+    to top,
+    #fff2cc 0%,
+    #ffb347 45%,
+    rgba(255, 120, 40, 0) 100%
+  );
+  animation: tvFlashWash 1s cubic-bezier(0.05, 0.85, 0.25, 1) forwards;
+}
+
+/* The fireball: a core that blooms outward and keeps going as it fades, so
+   the light looks like it is travelling rather than switching off. */
+@keyframes tvFlashCore {
+  0% {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+  4% {
+    opacity: 1;
+    transform: scale(0.75);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+.tv-flash-core {
+  background: radial-gradient(
+    circle at 50% 58%,
+    #ffffff 0%,
+    #ffe08a 22%,
+    rgba(255, 150, 50, 0.65) 45%,
+    rgba(255, 110, 30, 0) 72%
+  );
+  animation: tvFlashCore 1s cubic-bezier(0.05, 0.85, 0.25, 1) forwards;
 }
 
 /* Rain. Streaks rather than dots: at the back of a room a falling dot is

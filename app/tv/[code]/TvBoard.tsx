@@ -360,11 +360,11 @@ const TvBoard: React.FC<TvBoardProps> = ({
 
   // Raise the picture for a sound that just played.
   //
-  // Rate-limited here as well as by the audio governor, because the two are
-  // protecting different things: the governor decides what a room can stand
-  // HEARING, and this decides what a screen can safely SHOW. The bright ones
-  // share a clock and are gapped far below the three-flashes-a-second
-  // seizure threshold.
+  // Throttled separately from the audio governor, because the two are judging
+  // different things: the governor decides what a room can stand HEARING, and
+  // a sound that is fine to hear twice in a second is not necessarily fine to
+  // SEE twice in a second. The bright ones share one clock so a thunder and
+  // an explosion back to back read as two events rather than a glitch.
   const raiseVisual = useCallback((kind: VisualKind) => {
     const now = Date.now();
     const bright = BRIGHT_VISUALS.has(kind);
@@ -916,19 +916,19 @@ const TvBoard: React.FC<TvBoardProps> = ({
           panel, and keyed so a repeat restarts the animation rather than
           sliding into the tail of the last one. */}
       {visual?.kind === "lightning" && (
-        <div
-          key={visual.key}
-          aria-hidden
-          className="tv-lightning pointer-events-none fixed inset-0 z-20 bg-white"
-        />
+        <div key={visual.key} aria-hidden>
+          {/* Two layers: the sky going off, and the strike itself. One flat
+              rectangle is what makes a fake flash look fake. */}
+          <div className="tv-lightning-sky pointer-events-none fixed inset-0 z-20" />
+          <div className="tv-lightning-core pointer-events-none fixed inset-0 z-20" />
+        </div>
       )}
 
       {visual?.kind === "flash" && (
-        <div
-          key={visual.key}
-          aria-hidden
-          className="tv-flash pointer-events-none fixed inset-0 z-20 bg-[#ffe9b0]"
-        />
+        <div key={visual.key} aria-hidden>
+          <div className="tv-flash-wash pointer-events-none fixed inset-0 z-20" />
+          <div className="tv-flash-core pointer-events-none fixed inset-0 z-20" />
+        </div>
       )}
 
       {visual?.kind === "rain" && (
