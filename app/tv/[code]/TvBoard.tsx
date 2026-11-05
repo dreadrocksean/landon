@@ -27,6 +27,13 @@ import {
   SoundId,
 } from "@/lib/soundFx";
 import {
+  BRIGHT_VISUALS,
+  VISUAL_GAP_MS,
+  VISUAL_MS,
+  visualFor,
+  type VisualKind,
+} from "@/lib/soundVisuals";
+import {
   DEFAULT_PRESET,
   SOUND_KIND,
   type SoundKind,
@@ -113,6 +120,18 @@ const VOTE_DISPLAY_FLOOR = 10;
 // How long a heckle's credit stays on screen. Long enough to read from the
 // back of a room, short enough to be gone before the next one lands.
 const HECKLE_CALLOUT_MS = 4500;
+
+// Rain, built once at module load the way the confetti is. Irregular by
+// construction — a sheet where every streak shares a duration pulses in step
+// and reads as a screensaver rather than weather.
+const RAINDROP_COUNT = 90;
+const RAINDROPS = Array.from({ length: RAINDROP_COUNT }, (_, i) => ({
+  left: (i * 37.31) % 100,
+  length: 6 + ((i * 13) % 7),
+  delay: ((i * 29) % 100) / 100 * 1.1,
+  duration: 0.75 + ((i * 7) % 5) * 0.12,
+  opacity: 0.35 + ((i * 11) % 4) * 0.12,
+}));
 
 // A name off a client write, so it is clamped and stripped before it goes on
 // a screen the whole venue can see. Matches HECKLE_NAME_MAX in the app.
@@ -339,8 +358,45 @@ const TvBoard: React.FC<TvBoardProps> = ({
     });
   }, []);
 
+  // Raise the picture for a sound that just played.
+  //
+  // Rate-limited here as well as by the audio governor, because the two are
+  // protecting different things: the governor decides what a room can stand
+  // HEARING, and this decides what a screen can safely SHOW. The bright ones
+  // share a clock and are gapped far below the three-flashes-a-second
+  // seizure threshold.
+  const raiseVisual = useCallback((kind: VisualKind) => {
+    const now = Date.now();
+    const bright = BRIGHT_VISUALS.has(kind);
+    const since = now - (bright ? lastBrightAt.current : lastVisualAt.current[kind] ?? 0);
+    if (since < VISUAL_GAP_MS[kind]) return;
+    if (bright) lastBrightAt.current = now;
+    lastVisualAt.current[kind] = now;
+
+    if (kind === "confetti") {
+      // Shares the tip's confetti rather than running a second layer of it.
+      setConfetti(true);
+      if (visualTimer.current) clearTimeout(visualTimer.current);
+      visualTimer.current = setTimeout(
+        () => setConfetti(false),
+        VISUAL_MS.confetti
+      );
+      return;
+    }
+
+    visualSeq.current += 1;
+    setVisual({ kind, key: visualSeq.current });
+    if (visualTimer.current) clearTimeout(visualTimer.current);
+    visualTimer.current = setTimeout(() => setVisual(null), VISUAL_MS[kind]);
+  }, []);
+
   const audition = useCallback((id: SoundId) => {
     soundRef.current?.play(id, { force: true });
+    // The panel previews the picture as well as the sound. Checking one
+    // without the other is how you find out at the gig that the sleigh never
+    // worked.
+    const kind = visualFor(id);
+    if (kind) raiseVisual(kind);
   }, []);
 
   // The artist's kill switch, read straight off the show doc — the same
@@ -422,6 +478,18 @@ const TvBoard: React.FC<TvBoardProps> = ({
   } | null>(null);
   const calloutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // The picture riding the current sound. One at a time: two full-screen
+  // effects at once is noise, and the newest is always the one the room just
+  // heard.
+  const [visual, setVisual] = useState<{ kind: VisualKind; key: number } | null>(
+    null
+  );
+  const visualTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const visualSeq = useRef(0);
+  const lastVisualAt = useRef<Partial<Record<VisualKind, number>>>({});
+  // One clock for every bright effect, not one each — see BRIGHT_VISUALS.
+  const lastBrightAt = useRef(0);
+
   useEffect(() => {
     if (!board.artistId || !board.showId) return;
     const mountMs = Date.now();
@@ -474,6 +542,9 @@ const TvBoard: React.FC<TvBoardProps> = ({
             // Credit only what actually reached the room. A governed drop
             // puts no sound in the air, and a name on screen with silence
             // behind it reads as a bug.
+            const kind = visualFor(fx);
+            if (kind) raiseVisual(kind);
+
             const who = cleanHeckleName(data.heckleName);
             if (who && SOUND_KIND[fx] === "heckle") {
               const label =
@@ -838,6 +909,64 @@ const TvBoard: React.FC<TvBoardProps> = ({
               <span className="tv-flyer-inner">{f.emoji}</span>
             </span>
           ))}
+        </div>
+      )}
+
+      {/* The picture riding a sound. Above the board, below the engineer's
+          panel, and keyed so a repeat restarts the animation rather than
+          sliding into the tail of the last one. */}
+      {visual?.kind === "lightning" && (
+        <div
+          key={visual.key}
+          aria-hidden
+          className="tv-lightning pointer-events-none fixed inset-0 z-20 bg-white"
+        />
+      )}
+
+      {visual?.kind === "flash" && (
+        <div
+          key={visual.key}
+          aria-hidden
+          className="tv-flash pointer-events-none fixed inset-0 z-20 bg-[#ffe9b0]"
+        />
+      )}
+
+      {visual?.kind === "rain" && (
+        <div
+          key={visual.key}
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-20 overflow-hidden"
+        >
+          {RAINDROPS.map((drop, i) => (
+            <span
+              key={i}
+              className="tv-raindrop absolute top-0 block rounded-full bg-white"
+              style={{
+                left: `${drop.left}%`,
+                width: "0.15vh",
+                height: `${drop.length}vh`,
+                opacity: drop.opacity,
+                animationDelay: `${drop.delay}s`,
+                animationDuration: `${drop.duration}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {visual?.kind === "santa" && (
+        <div
+          key={visual.key}
+          aria-hidden
+          className="tv-sleigh pointer-events-none fixed left-0 top-[16vh] z-20 whitespace-nowrap text-[10vh] leading-none"
+        >
+          {/* Reindeer, Santa, sleigh — in that order because it travels
+              right to left, so the deer leads. Santa alone is a FACE, not a
+              figure, and a face beside a sled read as two unrelated objects;
+              with something pulling in front it resolves into a team.
+              Negative tracking closes the emoji gaps so it moves as one
+              thing rather than three. */}
+          <span className="tv-sleigh-bob tracking-[-0.18em]">🦌🎅🛷</span>
         </div>
       )}
 

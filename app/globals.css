@@ -235,3 +235,112 @@ body::-webkit-scrollbar-thumb {
   display: inline-block;
   animation: tvTipPop 7s ease-out forwards;
 }
+
+/* ---- Sound visuals -------------------------------------------------------
+   Pictures that ride a sound. All transform/opacity so they stay on the GPU:
+   this board runs on whatever laptop the venue has, and a dropped frame in
+   the middle of a song is more noticeable than the effect is worth. */
+
+/* Lightning. TWO flashes and done — see VISUAL_GAP_MS in lib/soundVisuals.ts
+   for why the count matters. The gap between them is uneven because real
+   lightning stutters, and the screen settles to black well before the
+   thunder it rides has finished. */
+@keyframes tvLightning {
+  0%,
+  4% {
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.92;
+  }
+  11% {
+    opacity: 0.05;
+  }
+  19% {
+    opacity: 0.78;
+  }
+  27% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.tv-lightning {
+  animation: tvLightning 1.4s ease-out forwards;
+}
+
+/* The explosion. One flash, warmer and heavier than lightning, with a longer
+   falloff so it reads as a blast rather than a camera shutter. */
+@keyframes tvFlash {
+  0% {
+    opacity: 0;
+  }
+  4% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.tv-flash {
+  animation: tvFlash 1s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+}
+
+/* Rain. Streaks rather than dots: at the back of a room a falling dot is
+   invisible and a falling line is weather. Each one carries its own delay
+   and duration from the component so the sheet never pulses in step. */
+@keyframes tvRainFall {
+  0% {
+    transform: translateY(-20vh);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.55;
+  }
+  92% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateY(120vh);
+    opacity: 0;
+  }
+}
+
+.tv-raindrop {
+  animation-name: tvRainFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* The sleigh. Crosses right to left with a slow bob, Santa leading. Sized in
+   vh so it is the same size on any screen the venue owns. */
+@keyframes tvSleigh {
+  0% {
+    transform: translate(115vw, 0) rotate(-4deg);
+  }
+  100% {
+    transform: translate(-30vw, -6vh) rotate(4deg);
+  }
+}
+
+@keyframes tvSleighBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2.5vh);
+  }
+}
+
+.tv-sleigh {
+  animation: tvSleigh 6.5s linear forwards;
+}
+
+.tv-sleigh-bob {
+  display: inline-block;
+  animation: tvSleighBob 1.6s ease-in-out infinite;
+}
