@@ -22,7 +22,6 @@ import { Board, BoardSong, BoardTip, toBoard } from "@/lib/board";
 import {
   createSoundBoard,
   isFanSoundId,
-  SOUND_FOR_REACTION,
   SOUND_LIST,
   SoundBoard,
   SoundId,
@@ -458,13 +457,14 @@ const TvBoard: React.FC<TvBoardProps> = ({
           // extra to reach: no new listener, no new write, no Cloud Function.
           // play() returns false when the global cooldown swallows it, which
           // in a busy room is the common case and not an error.
-          // A sound the fan picked outright wins; mapping an emote type is
-          // the fallback for taps on the reaction bar, which has no way to
-          // name a sound. Validated rather than trusted — this value comes
-          // off a client write.
+          // Only a sound the fan PICKED. Emotes used to map onto sounds as a
+          // fallback, which quietly handed the PA to a bar built for a
+          // mashing thumb — somebody tapping a heart was not asking the room
+          // to hear a fog horn. Validated rather than trusted, because this
+          // value comes off a client write.
           const fx: SoundId | undefined = isFanSoundId(data.sound)
             ? data.sound
-            : SOUND_FOR_REACTION[String(data.type)];
+            : undefined;
           if (
             fx &&
             fxAllowedRef.current &&

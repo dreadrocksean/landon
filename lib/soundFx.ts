@@ -9,10 +9,12 @@
 //  1. The cooldown is GLOBAL, not per-fan. Thirty phones mashing is a wall of
 //     noise through a rig running at gig volume. Extras are DROPPED rather
 //     than queued — a queue only moves the pile-up into the next song.
-//  2. The app's primary quick-tap emote stays SILENT (see SOUND_FOR_REACTION).
-//     It is throttled to 180ms in the client precisely because it is built for
-//     a mashing thumb; wiring that to a PA turns every happy fan into an
-//     air-raid siren.
+//  2. EMOTES ARE SILENT. Four reaction types used to map onto sounds, which
+//     meant the emoji bar — throttled to 180ms in the client precisely
+//     because it is built for a mashing thumb — could drive the PA. A fan
+//     tapping a heart was not asking the room to hear anything. Sound now
+//     comes only from the picker, where every option is labelled and the
+//     fan knows the whole room is about to hear it.
 //  3. Everything is levelled on the way in, so the first sound of the night
 //     can't set the engineer's gain and the second one take the roof off.
 //
@@ -500,15 +502,6 @@ export const SOUND_LIST: {
   variants: SFX_FAMILIES[id]?.length || (SOUNDS[id].render ? 1 : 0),
 }));
 
-// Which of the app's existing reaction types make a noise.
-//
-// Four of the eight, and the gaps are the interesting part. 'smile' is the
-// collapsed quick-tap and by far the most common write of the night, so it is
-// silent by design. 'heart' and 'wow' are affection, not punctuation, and have
-// no sound that wouldn't wear out. Meanwhile 'shhh' and the sleigh bells map
-// onto no emote at all, which is the clearest evidence that the sound menu
-// wants to be its own short, deliberate, probably paid list rather than a
-// second job for an emoji bar built to be mashed.
 // Ids a fan is allowed to fire. Everything in the catalogue except the
 // reference tone, which exists for whoever is setting the gain and would be a
 // strange thing for a room to be able to trigger. Also the gate that stops an
@@ -519,13 +512,6 @@ const FAN_PLAYABLE: ReadonlySet<string> = new Set(
 
 export const isFanSoundId = (value: unknown): value is SoundId =>
   typeof value === "string" && FAN_PLAYABLE.has(value);
-
-export const SOUND_FOR_REACTION: Record<string, SoundId | undefined> = {
-  bang: "thunder",
-  booyah: "applause",
-  fire: "fog-horn",
-  hundred: "cheers",
-};
 
 // Scale a rendered buffer in place. See TARGET_RMS above for why RMS leads and
 // the peak only clamps.
