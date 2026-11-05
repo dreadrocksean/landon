@@ -23,6 +23,15 @@
 // Landon!" can only ever be a recording — so `url` is the seam for when those
 // arrive, and a fetched sound is levelled by the same path.
 
+import {
+  createRoomGovernor,
+  DEFAULT_PRESET,
+  type RoomGovernor,
+  type SoundDecision,
+  type SoundPlaying,
+  type SoundPresetId,
+} from "./soundGovernor";
+
 export type SoundId =
   // One-shots: a punctuation mark on something happening on stage.
   | "thunder"
@@ -41,11 +50,6 @@ export type SoundId =
   | "large-crowd"
   // Not a sound effect — the engineer's reference tone.
   | "test";
-
-// One sound every few seconds for the whole room. Long enough that two taps
-// can't overlap into mush, short enough that a crowd still feels it responds
-// to them.
-export const DEFAULT_COOLDOWN_MS = 2500;
 
 // Rendered offline at this rate and resampled by the browser if the output
 // device differs, which is cheaper than guessing the device rate up front.
@@ -450,24 +454,49 @@ export interface SoundBoard {
   // Must be called from a user gesture the first time. Resolves to whether
   // the board can actually make a noise.
   unlock: () => Promise<boolean>;
-  // Returns whether the sound actually fired, so a caller can tell a cooldown
+  // Returns whether the sound actually fired, so a caller can tell a governed
   // drop from a play.
-  play: (id: SoundId, opts?: { force?: boolean }) => boolean;
+  //
+  // `playing` answers "is a song on right now?" for the when-gate and must be
+  // allowed to be null — see resolvePlaying. A caller that omits it gets the
+  // honest unknown, which never blocks.
+  play: (
+    id: SoundId,
+    opts?: { force?: boolean; playing?: SoundPlaying }
+  ) => boolean;
+  // Why the last drop happened, for the operator panel. A room that goes quiet
+  // should be explicable at the desk rather than looking broken.
+  lastDecision: () => SoundDecision | null;
+  // Would this fire right now? Does not consume any budget.
+  check: (id: SoundId, playing?: SoundPlaying) => SoundDecision;
+  // Tonight's rule set. A dueling-pianos show and a listening room want
+  // opposite amounts of governance from the same catalogue.
+  setPreset: (preset: SoundPresetId) => void;
+  // New show: clear every clock and per-show counter.
+  resetGovernor: () => void;
   isReady: () => boolean;
   close: () => void;
 }
 
 export const createSoundBoard = (options?: {
-  cooldownMs?: number;
   volume?: number;
+  preset?: SoundPresetId;
 }): SoundBoard => {
-  const cooldownMs = options?.cooldownMs ?? DEFAULT_COOLDOWN_MS;
   const volume = options?.volume ?? 0.9;
+
+  // The single global cooldown this used to carry has been replaced by the
+  // governor, which knows what KIND each sound is. That is a deliberate
+  // loosening as much as a tightening: one cooldown for everything had to be
+  // set for the worst case, so it throttled applause — the one sound whose
+  // degenerate case is the desired case — to protect the room from airhorns.
+  const governor: RoomGovernor = createRoomGovernor(
+    options?.preset ?? DEFAULT_PRESET
+  );
+  let lastDecision: SoundDecision | null = null;
 
   let ctx: AudioContext | null = null;
   let master: GainNode | null = null;
   let ready = false;
-  let lastPlayedAt = 0;
   let rendering: Promise<void> | null = null;
   // The bed currently running. A new bed replaces it rather than layering on
   // top — see SoundSpec.bed for why a time-based cooldown cannot do this job.
@@ -571,17 +600,21 @@ export const createSoundBoard = (options?: {
     if (!buffer) return false;
     const spec = SOUNDS[id];
 
-    // Global and a drop, not a queue. See the header.
+    // A drop, not a queue. See the header — a queue only moves the pile-up
+    // into the next song.
     //
     // A forced play is an operator action — the engineer setting a level, or
-    // the tone that confirms the board just armed — so it neither waits for
-    // the cooldown nor STARTS one. Letting it start one cost the room the
-    // first real reaction after arming every time, and would have muted the
-    // crowd for 2.5s after each press while someone auditioned the panel.
+    // the tone that confirms the board just armed — so it is neither governed
+    // nor RECORDED. Letting it record cost the room the first real reaction
+    // after arming every time, and would have muted the crowd after each
+    // press while someone auditioned the panel.
     if (!opts?.force) {
-      const now = Date.now();
-      if (now - lastPlayedAt < cooldownMs) return false;
-      lastPlayedAt = now;
+      const decision = governor.tryPlay(id, {
+        nowMs: Date.now(),
+        playing: opts?.playing ?? null,
+      });
+      lastDecision = decision;
+      if (!decision.ok) return false;
     }
 
     const at = ctx.currentTime;
@@ -613,6 +646,11 @@ export const createSoundBoard = (options?: {
   return {
     unlock,
     play,
+    lastDecision: () => lastDecision,
+    check: (id, playing) =>
+      governor.check(id, { nowMs: Date.now(), playing: playing ?? null }),
+    setPreset: governor.setPreset,
+    resetGovernor: governor.reset,
     isReady: () => ready,
     close: () => {
       ready = false;

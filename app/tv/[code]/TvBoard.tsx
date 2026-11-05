@@ -27,6 +27,38 @@ import {
   SoundBoard,
   SoundId,
 } from "@/lib/soundFx";
+import {
+  DEFAULT_PRESET,
+  isSoundPresetId,
+  PRESENCE_FRESH_MS,
+  resolvePlaying,
+  type SoundPlaying,
+  type SoundPresetId,
+} from "@/lib/soundGovernor";
+
+// Firestore Timestamp -> millis, tolerating a pending local write (no server
+// timestamp yet) and a doc written by an older version of the app.
+const tsToMs = (v: unknown): number => {
+  const ms = (v as { toMillis?: () => number })?.toMillis?.();
+  return typeof ms === "number" ? ms : 0;
+};
+
+// How many fans are sitting on the SAME song's lyrics, taking the most
+// populated song rather than the total: five fans spread over five songs is
+// five people browsing, not a room listening to one thing.
+const samePageFans = (presence: unknown, nowMs: number): number => {
+  if (!presence || typeof presence !== "object") return 0;
+  const bySong: Record<string, number> = {};
+  Object.values(presence as Record<string, any>).forEach((entry) => {
+    const songId = entry?.songId;
+    if (!songId) return;
+    const at = tsToMs(entry?.at);
+    if (!at || nowMs - at > PRESENCE_FRESH_MS) return;
+    bySong[songId] = (bySong[songId] ?? 0) + 1;
+  });
+  const counts = Object.values(bySong);
+  return counts.length ? Math.max(...counts) : 0;
+};
 
 interface TvBoardProps {
   code: string;
@@ -295,15 +327,40 @@ const TvBoard: React.FC<TvBoardProps> = ({
   // re-rendering the board.
   const fxAllowedRef = useRef(true);
   const [fxAllowed, setFxAllowed] = useState(true);
+  // Is a song playing? Read from the same doc, resolved from the three signals
+  // it already carries (the artist's own navigation, a fan confirming the "is
+  // your song playing?" prompt, and a crowd sitting on one song's lyrics).
+  // A ref because the play path must read it without re-rendering the board.
+  const fxPlayingRef = useRef<SoundPlaying>(null);
+  const [fxPreset, setFxPreset] = useState<SoundPresetId>(DEFAULT_PRESET);
 
   useEffect(() => {
     if (!fxOn || !board.artistId || !board.showId) return;
     const unsub = onSnapshot(
       doc(db, "artists", board.artistId, "shows", board.showId),
       (snap) => {
-        const allowed = snap.data()?.soundFx !== false;
+        const data = snap.data() ?? {};
+        const allowed = data.soundFx !== false;
         fxAllowedRef.current = allowed;
         setFxAllowed(allowed);
+        setFxPreset(
+          isSoundPresetId(data.soundFxPreset) ? data.soundFxPreset : DEFAULT_PRESET
+        );
+        const nowMs = Date.now();
+        const atMs = tsToMs(data.artistPlaying?.at);
+        fxPlayingRef.current = resolvePlaying(
+          {
+            // A pending local write has no server timestamp yet, which would
+            // read as 1970 and go instantly stale. Ignore it and wait for the
+            // server's own value.
+            artistPlaying: atMs
+              ? { on: data.artistPlaying?.on === true, atMs }
+              : null,
+            playConfirmAtMs: tsToMs(data.playConfirm?.at),
+            lyricsPresenceCount: samePageFans(data.lyricsPresence, nowMs),
+          },
+          nowMs
+        );
       },
       () => {
         // Cosmetic listener for a safety control: never take the board down,
@@ -312,6 +369,10 @@ const TvBoard: React.FC<TvBoardProps> = ({
     );
     return () => unsub();
   }, [fxOn, board.artistId, board.showId]);
+
+  useEffect(() => {
+    soundRef.current?.setPreset(fxPreset);
+  }, [fxPreset]);
 
   // Flying reactions, mirroring the app's ReactionOverlay. Read straight from
   // artists/{id}/shows/{id}/reactions rather than through publicBoards: they
@@ -364,7 +425,11 @@ const TvBoard: React.FC<TvBoardProps> = ({
           const fx: SoundId | undefined = isFanSoundId(data.sound)
             ? data.sound
             : SOUND_FOR_REACTION[String(data.type)];
-          if (fx && fxAllowedRef.current && soundRef.current?.play(fx)) {
+          if (
+            fx &&
+            fxAllowedRef.current &&
+            soundRef.current?.play(fx, { playing: fxPlayingRef.current })
+          ) {
             playedFx = fx;
           }
           fresh.push({
