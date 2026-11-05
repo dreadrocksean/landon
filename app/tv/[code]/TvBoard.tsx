@@ -19,6 +19,7 @@ import {
 
 import { db } from "@/lib/gcp/client";
 import { Board, BoardSong, BoardTip, toBoard } from "@/lib/board";
+import { GAME_LABEL, ShowGame, toShowGame } from "@/lib/game";
 import {
   createSoundBoard,
   isFanSoundId,
@@ -120,6 +121,10 @@ const VOTE_DISPLAY_FLOOR = 10;
 // How long a heckle's credit stays on screen. Long enough to read from the
 // back of a room, short enough to be gone before the next one lands.
 const HECKLE_CALLOUT_MS = 4500;
+
+// How long the winner takeover holds before dropping back to the panel. Long
+// enough for a room to look up, find the name and react to it.
+const GAME_FANFARE_MS = 7000;
 
 // Rain, built once at module load the way the confetti is. Irregular by
 // construction — a sheet where every streak shares a duration pulses in step
@@ -288,6 +293,15 @@ const TvBoard: React.FC<TvBoardProps> = ({
   const tipPrimedRef = useRef(false);
   const [tip, setTip] = useState<BoardTip | null>(null);
   const [confetti, setConfetti] = useState(false);
+  // The running game. Its own subscription rather than riding the sound one,
+  // because that listener only exists on a board opened with ?fx=1 — the
+  // desk's copy — and the game has to appear on every screen in the venue.
+  const [game, setGame] = useState<ShowGame | null>(null);
+  // Fires once when a winner first appears, so the takeover is an EVENT
+  // rather than a state the screen sits in.
+  const [gameFanfare, setGameFanfare] = useState<string | null>(null);
+  const lastWinnerRef = useRef<string | null>(null);
+  const fanfareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const current = board.recentTip;
@@ -421,6 +435,33 @@ const TvBoard: React.FC<TvBoardProps> = ({
   const [fxPreset, setFxPreset] = useState<SoundPresetId>(DEFAULT_PRESET);
 
   useEffect(() => {
+    if (!board.artistId || !board.showId) return;
+    const unsub = onSnapshot(
+      doc(db, "artists", board.artistId, "shows", board.showId),
+      (snap) => setGame(toShowGame((snap.data() ?? {}).game)),
+      () => {
+        // Cosmetic, like the reactions listener: a refused read must not take
+        // the board down. No game simply means no game.
+      }
+    );
+    return unsub;
+  }, [board.artistId, board.showId]);
+
+  // The winner takeover, raised once per round.
+  useEffect(() => {
+    const key = game?.winner ? `${game.id}:${game.winner.uid}` : null;
+    if (!key || key === lastWinnerRef.current) return;
+    lastWinnerRef.current = key;
+    setGameFanfare(key);
+    setConfetti(true);
+    if (fanfareTimer.current) clearTimeout(fanfareTimer.current);
+    fanfareTimer.current = setTimeout(() => {
+      setGameFanfare(null);
+      setConfetti(false);
+    }, GAME_FANFARE_MS);
+  }, [game?.id, game?.winner]);
+
+  useEffect(() => {
     if (!fxOn || !board.artistId || !board.showId) return;
     const unsub = onSnapshot(
       doc(db, "artists", board.artistId, "shows", board.showId),
@@ -477,6 +518,7 @@ const TvBoard: React.FC<TvBoardProps> = ({
     key: number;
   } | null>(null);
   const calloutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   // The picture riding the current sound. One at a time: two full-screen
   // effects at once is noise, and the newest is always the one the room just
@@ -633,6 +675,85 @@ const TvBoard: React.FC<TvBoardProps> = ({
           </p>
         )}
 
+        {game ? (
+          /* A round replaces the STANDINGS, not the whole screen.
+             Vote positions are irrelevant for the next minute, but the join
+             QR on the right is more important than it has ever been — a game
+             is the one thing on this board that makes somebody who is not
+             playing want the app. Blurring it out behind a takeover would
+             throw away the moment it exists to create. */
+          <div className="mt-[1.6vw] flex min-h-0 flex-1 flex-col justify-center">
+            <p className="text-[clamp(0.7rem,1.3vw,1.75rem)] font-bold uppercase leading-none tracking-[0.3em] text-lime">
+              🎵 {GAME_LABEL[game.type] ?? "Game"}
+            </p>
+
+            {game.status === "open" && !game.winner && (
+              <>
+                <p className="mt-[1.4vw] text-[clamp(1.6rem,5vw,7rem)] font-bold leading-none text-white">
+                  What&apos;s playing?
+                </p>
+                <p className="mt-[1.2vw] text-[clamp(0.9rem,2vw,2.6rem)] leading-tight text-cyan">
+                  First to name it wins. Get the artist too for a bonus.
+                </p>
+              </>
+            )}
+
+            {game.status === "open" && game.winner && (
+              <>
+                <p className="mt-[1.4vw] text-[clamp(0.8rem,1.6vw,2.1rem)] font-bold uppercase tracking-[0.2em] text-cyan">
+                  Got it first
+                </p>
+                <p className="mt-[0.6vw] break-words text-[clamp(1.6rem,5vw,7rem)] font-bold leading-none text-lime">
+                  {game.winner.name}
+                  {game.winner.artistBonus ? " ★" : ""}
+                </p>
+                <p className="mt-[1.2vw] text-[clamp(0.8rem,1.6vw,2.1rem)] leading-tight text-cyan">
+                  Still open — get on the board.
+                </p>
+              </>
+            )}
+
+            {game.status === "closed" && (
+              <>
+                {!!game.revealedSong && (
+                  <p className="mt-[1.2vw] break-words text-[clamp(1.4rem,4.2vw,6rem)] font-bold leading-none text-white">
+                    {game.revealedSong}
+                  </p>
+                )}
+                {!!game.revealedArtist && (
+                  <p className="mt-[0.5vw] text-[clamp(0.9rem,2vw,2.6rem)] leading-tight text-cyan">
+                    {game.revealedArtist}
+                  </p>
+                )}
+                {game.winner ? (
+                  <p className="mt-[1.4vw] text-[clamp(1rem,2.4vw,3.2rem)] font-bold leading-tight text-lime">
+                    {game.winner.name}
+                    {game.winner.artistBonus ? " ★" : ""}
+                  </p>
+                ) : (
+                  <p className="mt-[1.4vw] text-[clamp(1rem,2.2vw,2.8rem)] leading-tight text-cyan">
+                    Nobody got that one.
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* Right but not first. The point of putting them up is that
+                most of the room is in this bucket, and a near miss with your
+                name on it is a reason to play the next one. */}
+            {(game.alsoCorrect?.length ?? 0) > 0 && (
+              <div className="mt-[1.6vw]">
+                <p className="text-[clamp(0.6rem,1.1vw,1.4rem)] font-bold uppercase tracking-[0.25em] text-cyan/60">
+                  Also got it
+                </p>
+                <p className="mt-[0.5vw] text-[clamp(0.8rem,1.6vw,2.1rem)] leading-snug text-white/80">
+                  {game.alsoCorrect!.map((p) => p.name).join(" · ")}
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
         {board.songs.length > 0 && (
           <p className="mt-[1.6vw] text-[clamp(0.7rem,1.3vw,1.75rem)] font-bold uppercase leading-none tracking-[0.25em] text-cyan">
             🔥 Crowd Favorites
@@ -721,6 +842,8 @@ const TvBoard: React.FC<TvBoardProps> = ({
             </div>
           )}
         </div>
+          </>
+        )}
       </div>
 
       {/* The invitation. Everything here is aimed at someone glancing up from
@@ -967,6 +1090,36 @@ const TvBoard: React.FC<TvBoardProps> = ({
               Negative tracking closes the emoji gaps so it moves as one
               thing rather than three. */}
           <span className="tv-sleigh-bob tracking-[-0.18em]">🦌🎅🛷</span>
+        </div>
+      )}
+
+      {/* A winner takes the screen, briefly.
+          Reuses the tip splash's shape because it is the same kind of
+          moment — one person, named, with the room looking up. Lime rather
+          than gold: gold is money, this is glory. Drops back to the panel
+          after a few seconds so the round can keep collecting late answers. */}
+      {gameFanfare && game?.winner && (
+        <div
+          key={gameFanfare}
+          className="pointer-events-none fixed inset-0 z-10 flex items-center justify-center"
+        >
+          <div className="absolute inset-0 bg-bg-dark/80 backdrop-blur-[0.3vw]" />
+          <div className="tv-tip relative mx-[4vw] max-w-[74vw] rounded-[1.2vw] border-[0.25vw] border-lime bg-bg-overly px-[4vw] py-[2.6vw] text-center shadow-[0_1vw_4vw_rgba(0,0,0,0.7)]">
+            <div className="tv-tip-pop text-[clamp(2rem,6vw,8rem)] leading-none">
+              🏆
+            </div>
+            <div className="mt-[1vw] text-[clamp(0.6rem,1.1vw,1.5rem)] font-bold uppercase leading-none tracking-[0.4em] text-lime">
+              Named it first
+            </div>
+            <div className="mt-[0.8vw] break-words text-[clamp(1.6rem,5vw,7rem)] font-bold leading-none text-white">
+              {game.winner.name}
+            </div>
+            {game.winner.artistBonus && (
+              <div className="mt-[1.2vw] inline-block rounded-full bg-lime px-[2vw] py-[0.6vw] text-[clamp(0.9rem,2.2vw,3rem)] font-bold leading-none text-bg-dark">
+                ★ Got the artist too
+              </div>
+            )}
+          </div>
         </div>
       )}
 
