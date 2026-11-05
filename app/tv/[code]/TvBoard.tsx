@@ -29,6 +29,7 @@ import {
 } from "@/lib/soundFx";
 import {
   DEFAULT_PRESET,
+  SOUND_KIND,
   type SoundKind,
   isSoundPresetId,
   PRESENCE_FRESH_MS,
@@ -109,6 +110,18 @@ const CELEBRATION_MAX_LEFT = 66;
 // each song's, so the numbers arrive together rather than popping in one row
 // at a time, and so the sidebar total never contradicts the rows.
 const VOTE_DISPLAY_FLOOR = 10;
+
+// How long a heckle's credit stays on screen. Long enough to read from the
+// back of a room, short enough to be gone before the next one lands.
+const HECKLE_CALLOUT_MS = 4500;
+
+// A name off a client write, so it is clamped and stripped before it goes on
+// a screen the whole venue can see. Matches HECKLE_NAME_MAX in the app.
+const HECKLE_NAME_MAX = 18;
+const cleanHeckleName = (raw: unknown): string =>
+  typeof raw === "string"
+    ? raw.replace(/\s+/g, " ").trim().slice(0, HECKLE_NAME_MAX)
+    : "";
 
 // How the preview panel is ordered and labelled. Mirrors KIND_GROUPS in the
 // client's src/config/soundFx.ts so the engineer at the desk and the fan on
@@ -396,6 +409,15 @@ const TvBoard: React.FC<TvBoardProps> = ({
   // reactions are already permitted by firestore.rules.
   const [flyers, setFlyers] = useState<Flyer[]>([]);
   const flyerSeq = useRef(0);
+  // Who just heckled, credited on screen. The whole point of the kind: a
+  // chant is the room agreeing and belongs to nobody, a heckle is one person
+  // and the name is what makes it funny rather than a soundboard going off.
+  const [callout, setCallout] = useState<{
+    label: string;
+    name: string;
+    key: number;
+  } | null>(null);
+  const calloutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!board.artistId || !board.showId) return;
@@ -445,6 +467,20 @@ const TvBoard: React.FC<TvBoardProps> = ({
             soundRef.current?.play(fx, { playing: fxPlayingRef.current })
           ) {
             playedFx = fx;
+            // Credit only what actually reached the room. A governed drop
+            // puts no sound in the air, and a name on screen with silence
+            // behind it reads as a bug.
+            const who = cleanHeckleName(data.heckleName);
+            if (who && SOUND_KIND[fx] === "heckle") {
+              const label =
+                SOUND_LIST.find((entry) => entry.id === fx)?.label ?? "";
+              setCallout({ label, name: who, key: flyerSeq.current });
+              if (calloutTimer.current) clearTimeout(calloutTimer.current);
+              calloutTimer.current = setTimeout(
+                () => setCallout(null),
+                HECKLE_CALLOUT_MS
+              );
+            }
           }
           fresh.push({
             key: `${change.doc.id}-${seq}`,
@@ -774,6 +810,26 @@ const TvBoard: React.FC<TvBoardProps> = ({
               <span className="tv-flyer-inner">{f.emoji}</span>
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Who just heckled.
+
+          Bottom centre rather than up with the standings: it is a punchline,
+          it wants the room's eye for four seconds and then it wants to be
+          gone. Keyed so a second heckle restarts the animation instead of
+          sliding silently into the first one's slot. */}
+      {callout && (
+        <div
+          key={callout.key}
+          className="tv-callout pointer-events-none fixed bottom-[7vh] left-1/2 z-40 -translate-x-1/2 whitespace-nowrap rounded-[0.6vw] border border-lime/40 bg-bg-overly/95 px-[2vw] py-[0.8vw] text-center shadow-[0_0.3vw_1.2vw_rgba(0,0,0,0.6)]"
+        >
+          <div className="text-[clamp(1rem,2.4vw,3rem)] font-bold uppercase leading-none tracking-[0.1em] text-white">
+            {callout.label}
+          </div>
+          <div className="mt-[0.5vw] text-[clamp(0.6rem,1.2vw,1.5rem)] uppercase tracking-[0.25em] text-lime">
+            {callout.name}
+          </div>
         </div>
       )}
 

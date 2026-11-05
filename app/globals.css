@@ -152,3 +152,30 @@ body::-webkit-scrollbar-thumb {
   }
 }
 
+
+/* The heckle credit. Pops in fast enough to catch an eye mid-laugh, holds
+   while it is read, then leaves on its own — the component unmounts it at
+   HECKLE_CALLOUT_MS, and the timings here are set to finish just before
+   that so it never blinks out at full opacity. */
+@keyframes tv-callout-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 1.5vh) scale(0.94);
+  }
+  8% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  88% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -1vh) scale(0.98);
+  }
+}
+
+.tv-callout {
+  animation: tv-callout-in 4.5s ease-out forwards;
+}

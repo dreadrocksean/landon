@@ -79,10 +79,12 @@ export const KIND_RULE: Record<SoundKind, SoundRule> = {
   ambience: { cooldownMs: 8000, scope: "room", when: "any" },
   hit: { cooldownMs: 6000, scope: "room", when: "any" },
   phrase: { cooldownMs: 60000, scope: "room", when: "any", maxPerShow: 3 },
-  // The strictest line in the table. A heckle that can be fired on demand is
-  // not a heckle, it is a soundboard — so it waits for a gap, and twice a
-  // night is already generous. Presets loosen this; nothing tightens it.
-  heckle: { cooldownMs: 90000, scope: "room", when: "between", maxPerShow: 2 },
+  // Still waits for a gap, but no longer treats every heckle as an insult.
+  // Everybody shouts Freebird and nobody means it — a ritual the room is in
+  // on, and one that can only happen twice is a tease. What keeps this civil
+  // is the sender's name going up on the venue screen with it, which is a
+  // test that runs on every press rather than twice a night.
+  heckle: { cooldownMs: 45000, scope: "room", when: "between", maxPerShow: 6 },
 };
 
 // The density brake, and the rule per-sound cooldowns cannot express: twenty
@@ -94,7 +96,7 @@ export const ROOM_BUDGET_MS: Record<SoundKind, number> = {
   ambience: 8000,
   hit: 2500,
   phrase: 20000,
-  heckle: 45000,
+  heckle: 25000,
 };
 
 // Per-show overrides, because the right amount of governance is a property of

@@ -184,13 +184,14 @@ describe('resolvePlaying', () => {
 // the kind are tested together. Numbers must match the client suite's
 // 'hecklers wait for a gap' block.
 describe('hecklers', () => {
-  test('wait for a gap, and are spent after twice a night', () => {
+  test('wait for a gap, and run out eventually but not after two', () => {
     const g = createRoomGovernor();
     assert.equal(reasonOf(g.check('freebird', at(T0, true))), 'when');
-    assert.equal(g.tryPlay('freebird', at(T0, false)).ok, true);
-    assert.equal(g.tryPlay('freebird', at(T0 + 200_000, false)).ok, true);
+    for (let i = 0; i < 6; i += 1) {
+      assert.equal(g.tryPlay('freebird', at(T0 + i * 200_000, false)).ok, true);
+    }
     assert.equal(
-      reasonOf(g.tryPlay('freebird', at(T0 + 400_000, false))),
+      reasonOf(g.tryPlay('freebird', at(T0 + 7 * 200_000, false))),
       'spent'
     );
   });
@@ -208,9 +209,9 @@ describe('hecklers', () => {
     assert.deepEqual(g.tryPlay('boo', at(T0 + 1000, false)), {
       ok: false,
       reason: 'budget',
-      retryInMs: 44_000,
+      retryInMs: 24_000,
     });
-    assert.equal(g.tryPlay('boo', at(T0 + 45_000, false)).ok, true);
+    assert.equal(g.tryPlay('boo', at(T0 + 25_000, false)).ok, true);
   });
 
   test('dueling pianos heckles over the playing, uncapped', () => {
