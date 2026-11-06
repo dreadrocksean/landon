@@ -61,6 +61,10 @@ export interface BoardSupporter {
 export interface Board {
   artistId: string;
   artistName: string;
+  // The artist's profile photo. Already public — it is what fans see in the
+  // app — and it is the one thing that makes a board look like THIS band's
+  // rather than the product's.
+  artistImageURL: string | null;
   live: boolean;
   showId: string | null;
   showTitle: string | null;
@@ -78,6 +82,10 @@ export interface Board {
 export const toBoard = (data: Record<string, any>): Board => ({
   artistId: String(data.artistId ?? ""),
   artistName: String(data.artistName ?? ""),
+  artistImageURL:
+    typeof data.artistImageURL === "string" && data.artistImageURL
+      ? data.artistImageURL
+      : null,
   live: data.live === true,
   showId: data.showId ?? null,
   showTitle: data.showTitle ?? null,

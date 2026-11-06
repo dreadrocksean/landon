@@ -708,16 +708,37 @@ const TvBoard: React.FC<TvBoardProps> = ({
       className="flex h-screen w-screen flex-row justify-start overflow-hidden bg-bg-dark text-white"
     >
       <div className="flex min-w-0 flex-1 flex-col p-[3.2vw] pr-0">
-        <header className="flex items-baseline gap-[1.6vw]">
-          {board.live && (
-            <span className="flex shrink-0 items-center gap-[0.6vw] rounded-full bg-rose px-[1.2vw] py-[0.4vw] text-[clamp(0.6rem,1.1vw,1.5rem)] font-bold uppercase tracking-[0.2em] leading-none">
-              <span className="size-[0.7vw] animate-pulse rounded-full bg-white" />
-              Live
-            </span>
+        {/* items-center rather than items-baseline now that a photo shares
+            the row — a round image cannot sit on a text baseline without
+            looking dropped. */}
+        <header className="flex items-center gap-[1.6vw]">
+          {/* The artist's own face. It is the one thing that makes this look
+              like THIS band's screen rather than the product's, and the room
+              should recognise who they are looking at before they read a
+              word. Absent on older board documents and on artists who have
+              not uploaded one, so the whole row still works without it.
+
+              eslint-disable-next-line @next/next/no-img-element -- images
+              are unoptimized in next.config, so next/image buys nothing. */}
+          {board.artistImageURL && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={board.artistImageURL}
+              alt=""
+              className="size-[7vw] shrink-0 rounded-full object-cover shadow-[0_0.3vw_1vw_rgba(0,0,0,0.5)] ring-[0.25vw] ring-white/80"
+            />
           )}
-          <h1 className="min-w-0 truncate text-[clamp(1.75rem,4.6vw,6rem)] font-bold uppercase leading-none">
-            {board.artistName}
-          </h1>
+          <div className="flex min-w-0 flex-col gap-[0.5vw]">
+            {board.live && (
+              <span className="flex w-fit shrink-0 items-center gap-[0.6vw] rounded-full bg-rose px-[1.2vw] py-[0.4vw] text-[clamp(0.6rem,1.1vw,1.5rem)] font-bold uppercase tracking-[0.2em] leading-none">
+                <span className="size-[0.7vw] animate-pulse rounded-full bg-white" />
+                Live
+              </span>
+            )}
+            <h1 className="min-w-0 truncate text-[clamp(1.75rem,4.6vw,6rem)] font-bold uppercase leading-none">
+              {board.artistName}
+            </h1>
+          </div>
         </header>
 
         {subtitle && (
