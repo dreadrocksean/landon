@@ -28,6 +28,12 @@ export type Webpage = {
   profilePicUrl: string;
   tel: string;
   email: string;
+  // The artist has taken the calendar live: show their real gigs, even when
+  // there are none. Opt-in rather than inferred, because an empty calendar
+  // is a legitimate steady state for a working artist and "no data" cannot
+  // tell "not set up yet" apart from "nothing booked this month". See
+  // lib/placeholders.ts.
+  showsLive?: boolean;
   createdAt: Timestamp;
 };
 export type Artist = {

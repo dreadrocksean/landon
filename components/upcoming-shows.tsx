@@ -4,6 +4,7 @@ import Link from "next/link";
 import Container from "./container";
 import SectionHeading from "./section-heading";
 import useShows from "@/hooks/useShows";
+import CalendarSwitch from "./calendar-switch";
 import Image from "next/image";
 import { useLayout } from "@/app/LayoutProvider";
 import { twMerge } from "tailwind-merge";
@@ -54,18 +55,42 @@ const getScheduleFromTimestamps = ({
 
 type Props = {
   shows: ClientShow[] | undefined | null;
+  /** False while the dates below are samples rather than the artist's own. */
+  live?: boolean;
 };
 
-const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
-  if (!shows?.length) return null;
+const UpcomingShows: React.FC<Props> = ({ shows, live = true }: Props) => {
+  const empty = !shows?.length;
   return (
     <div id="shows" className="bg-bg-dark">
       <Container className="py-section">
         <SectionHeading>
           <h2 className="uppercase text-center">upcoming shows</h2>
         </SectionHeading>
+        {/* Labelled on the section itself, not only in the page notice.
+            Every other placeholder on this page costs a visitor nothing if
+            they take it at face value; a made-up date at a made-up venue can
+            put a real person outside a real door on a night when nothing is
+            happening. That is worth saying twice. */}
+        {!live && (
+          <p className="-mt-10 mb-10 text-center text-sm font-bold uppercase tracking-[0.3em] text-rose">
+            Sample dates
+          </p>
+        )}
+
+        {/* Only reachable once the calendar is live, since the sample set is
+            never empty. An artist with a live calendar and a quiet month
+            gets this rather than the blank the section used to collapse to. */}
+        {live && empty && (
+          <p
+            data-aos="fade-up"
+            className="text-center text-cyan text-lg mx-auto max-w-xl"
+          >
+            No dates announced yet — check back soon.
+          </p>
+        )}
         <div className="flex divide-y divide-light-dark flex-col">
-          {shows.map((show) => {
+          {(shows ?? []).map((show) => {
             const schedule = getScheduleFromTimestamps({
               start: show.scheduledStart,
               stop: show.scheduledStop,
@@ -129,6 +154,7 @@ const UpcomingShows: React.FC<Props> = ({ shows }: Props) => {
             );
           })}
         </div>
+        {!live && <CalendarSwitch />}
       </Container>
     </div>
   );
