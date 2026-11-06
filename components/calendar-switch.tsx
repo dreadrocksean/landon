@@ -3,7 +3,7 @@
 import React, { FC, useState } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 
-import useAuth from "@/hooks/useAuth";
+import useIsOwner from "@/hooks/useIsOwner";
 import { db } from "@/lib/gcp/client";
 import { useStore } from "@/store/useStore";
 
@@ -19,8 +19,7 @@ import { useStore } from "@/store/useStore";
 // Writes `showsLive` straight to the webpage doc, which the rules already let
 // the owning artist update. No new permission, no new endpoint.
 const CalendarSwitch: FC = () => {
-  const { user } = useAuth();
-  const artist = useStore((state) => state.artist);
+  const isOwner = useIsOwner();
   const webRoute = useStore((state) => state.webRoute);
   const webpage = useStore((state) => state.webpage);
   const setWebpage = useStore((state) => state.setWebpage);
@@ -30,7 +29,6 @@ const CalendarSwitch: FC = () => {
 
   // Ownership is the whole gate. Everyone else — fans, venues, bookers —
   // sees the sample calendar with its label and nothing to press.
-  const isOwner = !!user && !!artist?.userId && user.uid === artist.userId;
   if (!isOwner || !webRoute) return null;
 
   const goLive = async () => {
