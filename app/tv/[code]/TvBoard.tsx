@@ -323,6 +323,11 @@ const TvBoard: React.FC<TvBoardProps> = ({
   // rather than a state the screen sits in.
   const [gameFanfare, setGameFanfare] = useState<string | null>(null);
   const lastWinnerRef = useRef<string | null>(null);
+  // Primed-ness has to be its own flag, exactly as the tip banner learned:
+  // using "lastWinnerRef is still null" as the first-paint test cannot tell
+  // a winner that just landed from one that was already there when the board
+  // opened.
+  const gamePrimedRef = useRef(false);
   const fanfareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -456,6 +461,15 @@ const TvBoard: React.FC<TvBoardProps> = ({
   const fxPlayingRef = useRef<SoundPlaying>(null);
   const [fxPreset, setFxPreset] = useState<SoundPresetId>(DEFAULT_PRESET);
 
+  // Ending the round retires the takeover immediately. An artist who wins
+  // it themselves and ends it two seconds later would otherwise watch the
+  // reveal happen behind a blur.
+  useEffect(() => {
+    if (game?.status !== "closed") return;
+    if (fanfareTimer.current) clearTimeout(fanfareTimer.current);
+    setGameFanfare(null);
+  }, [game?.status]);
+
   useEffect(() => {
     if (!board.artistId || !board.showId) return;
     const unsub = onSnapshot(
@@ -469,11 +483,26 @@ const TvBoard: React.FC<TvBoardProps> = ({
     return unsub;
   }, [board.artistId, board.showId]);
 
-  // The winner takeover, raised once per round.
+  // The winner takeover, raised once per round — and only for a win that
+  // happens while this board is watching.
+  //
+  // Without priming, a screen opened (or reloaded) into a round that had
+  // already been won fired the fanfare on first paint, which dimmed and
+  // blurred the whole board. On a closed round that meant the takeover sat
+  // on top of the revealed title: the one thing the artist had just chosen
+  // to show the room was the one thing it hid.
   useEffect(() => {
     const key = game?.winner ? `${game.id}:${game.winner.uid}` : null;
+    if (!gamePrimedRef.current) {
+      gamePrimedRef.current = true;
+      lastWinnerRef.current = key;
+      return;
+    }
     if (!key || key === lastWinnerRef.current) return;
     lastWinnerRef.current = key;
+    // Nothing to celebrate on a round that is already over. The reveal is
+    // the moment now, and it must not be covered.
+    if (game?.status === "closed") return;
     setGameFanfare(key);
     setConfetti(true);
     if (fanfareTimer.current) clearTimeout(fanfareTimer.current);
@@ -1134,7 +1163,7 @@ const TvBoard: React.FC<TvBoardProps> = ({
           moment — one person, named, with the room looking up. Lime rather
           than gold: gold is money, this is glory. Drops back to the panel
           after a few seconds so the round can keep collecting late answers. */}
-      {gameFanfare && game?.winner && (
+      {gameFanfare && game?.winner && game.status === "open" && (
         <div
           key={gameFanfare}
           className="pointer-events-none fixed inset-0 z-10 flex items-center justify-center"
