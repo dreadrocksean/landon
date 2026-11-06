@@ -23,6 +23,10 @@ export type ShowGame = {
   startedAt: number;
   winner: GamePlayer | null;
   alsoCorrect?: GamePlayer[];
+  // The title with letters and digits knocked out, up for the whole round.
+  // Word and letter counts are a hint, not a leak — a row of blanks is the
+  // thing the room argues about while the clock runs.
+  maskedSong?: string | null;
   revealedSong?: string | null;
   revealedArtist?: string | null;
 };
@@ -60,6 +64,7 @@ export const toShowGame = (raw: unknown): ShowGame | null => {
     alsoCorrect: Array.isArray(g.alsoCorrect)
       ? g.alsoCorrect.map(player).filter((p): p is GamePlayer => !!p)
       : [],
+    maskedSong: typeof g.maskedSong === "string" ? g.maskedSong : null,
     revealedSong: typeof g.revealedSong === "string" ? g.revealedSong : null,
     revealedArtist:
       typeof g.revealedArtist === "string" ? g.revealedArtist : null,

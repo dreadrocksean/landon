@@ -433,3 +433,84 @@ body::-webkit-scrollbar-thumb {
   display: inline-block;
   animation: tvSleighBob 1.6s ease-in-out infinite;
 }
+
+/* The reveal. Each character of the title arrives on its own, left to
+   right, so the room reads it as it lands rather than being handed it —
+   which is the whole point of having held it back.
+
+   Staggered from the component with an inline animation-delay, because the
+   delay depends on the character's index and CSS cannot count. */
+@keyframes tvRevealChar {
+  0% {
+    opacity: 0;
+    transform: translateY(0.5em) scale(0.6);
+    filter: blur(0.08em);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-0.06em) scale(1.12);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.tv-reveal-char {
+  display: inline-block;
+  white-space: pre;
+  opacity: 0;
+  animation: tvRevealChar 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+
+/* The sparkle that rides each letter in. Separate element so it can fade on
+   its own clock and leave the letter behind. */
+@keyframes tvRevealSpark {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.5) rotate(90deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.4) rotate(180deg);
+  }
+}
+
+.tv-reveal-spark {
+  position: absolute;
+  left: 50%;
+  top: -0.35em;
+  width: 0.5em;
+  height: 0.5em;
+  margin-left: -0.25em;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    #ffffff 0%,
+    #ffe9a8 35%,
+    rgba(255, 220, 120, 0) 70%
+  );
+  animation: tvRevealSpark 0.75s ease-out forwards;
+}
+
+/* The masked title, while the round runs. A slow breath so it reads as
+   waiting rather than as a static image somebody forgot to update. */
+@keyframes tvMaskPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.tv-mask {
+  animation: tvMaskPulse 2.6s ease-in-out infinite;
+}

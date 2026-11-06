@@ -129,6 +129,28 @@ const GAME_FANFARE_MS = 7000;
 // Rain, built once at module load the way the confetti is. Irregular by
 // construction — a sheet where every streak shares a duration pulses in step
 // and reads as a screensaver rather than weather.
+// The title arriving one character at a time. Spaces carry no sparkle and
+// no delay of their own — a gap that twinkles reads as a letter you missed.
+const RevealedTitle: React.FC<{ text: string }> = ({ text }) => (
+  <span aria-label={text}>
+    {Array.from(text).map((ch, i) => (
+      <span
+        key={`${i}-${ch}`}
+        className="tv-reveal-char relative"
+        style={{ animationDelay: `${i * 0.07}s` }}
+      >
+        {ch}
+        {ch.trim() !== "" && (
+          <span
+            className="tv-reveal-spark"
+            style={{ animationDelay: `${i * 0.07}s` }}
+          />
+        )}
+      </span>
+    ))}
+  </span>
+);
+
 const RAINDROP_COUNT = 90;
 const RAINDROPS = Array.from({ length: RAINDROP_COUNT }, (_, i) => ({
   left: (i * 37.31) % 100,
@@ -687,29 +709,43 @@ const TvBoard: React.FC<TvBoardProps> = ({
               🎵 {GAME_LABEL[game.type] ?? "Game"}
             </p>
 
-            {game.status === "open" && !game.winner && (
+            {game.status === "open" && (
               <>
-                <p className="mt-[1.4vw] text-[clamp(1.6rem,5vw,7rem)] font-bold leading-none text-white">
+                <p className="mt-[1.2vw] text-[clamp(1.1rem,3vw,4.2rem)] font-bold leading-none text-white">
                   What&apos;s playing?
                 </p>
-                <p className="mt-[1.2vw] text-[clamp(0.9rem,2vw,2.6rem)] leading-tight text-cyan">
-                  First to name it wins. Get the artist too for a bonus.
-                </p>
-              </>
-            )}
 
-            {game.status === "open" && game.winner && (
-              <>
-                <p className="mt-[1.4vw] text-[clamp(0.8rem,1.6vw,2.1rem)] font-bold uppercase tracking-[0.2em] text-cyan">
-                  Got it first
-                </p>
-                <p className="mt-[0.6vw] break-words text-[clamp(1.6rem,5vw,7rem)] font-bold leading-none text-lime">
-                  {game.winner.name}
-                  {game.winner.artistBonus ? " ★" : ""}
-                </p>
-                <p className="mt-[1.2vw] text-[clamp(0.8rem,1.6vw,2.1rem)] leading-tight text-cyan">
-                  Still open — get on the board.
-                </p>
+                {/* The shape of the answer, all round. Letters knocked out,
+                    so this is safe on a wall — and the counts are a hint
+                    rather than a leak, which is what gives the half of the
+                    room that will never win something to argue about. */}
+                {!!game.maskedSong && (
+                  <p className="tv-mask mt-[1.4vw] break-words font-bold leading-none tracking-[0.12em] text-lime text-[clamp(1.6rem,5vw,7rem)]">
+                    {game.maskedSong}
+                  </p>
+                )}
+
+                {/* Winners are posted by NAME only. Nobody learns the song
+                    from somebody else winning it — the title waits for the
+                    artist to let it go. */}
+                {game.winner ? (
+                  <>
+                    <p className="mt-[1.6vw] text-[clamp(0.8rem,1.6vw,2.1rem)] font-bold uppercase tracking-[0.2em] text-cyan">
+                      Got it first
+                    </p>
+                    <p className="mt-[0.4vw] break-words text-[clamp(1.4rem,4vw,5.5rem)] font-bold leading-none text-lime">
+                      {game.winner.name}
+                      {game.winner.artistBonus ? " ★" : ""}
+                    </p>
+                    <p className="mt-[0.8vw] text-[clamp(0.8rem,1.6vw,2.1rem)] leading-tight text-cyan">
+                      Still open — get on the board.
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-[1.2vw] text-[clamp(0.8rem,1.7vw,2.3rem)] leading-tight text-cyan">
+                    First to name it wins. Get the artist too for a bonus.
+                  </p>
+                )}
               </>
             )}
 
@@ -717,7 +753,7 @@ const TvBoard: React.FC<TvBoardProps> = ({
               <>
                 {!!game.revealedSong && (
                   <p className="mt-[1.2vw] break-words text-[clamp(1.4rem,4.2vw,6rem)] font-bold leading-none text-white">
-                    {game.revealedSong}
+                    <RevealedTitle text={game.revealedSong} />
                   </p>
                 )}
                 {!!game.revealedArtist && (
