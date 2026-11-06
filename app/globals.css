@@ -514,3 +514,21 @@ body::-webkit-scrollbar-thumb {
 .tv-mask {
   animation: tvMaskPulse 2.6s ease-in-out infinite;
 }
+
+/* The construction bar is fixed to the bottom of the viewport, so without
+   reserving its height it sits ON TOP of whatever is at the bottom of the
+   screen — on an artist page that was the hero's tagline, and at the end of
+   the page the footer. Declared here rather than guessed at each use so the
+   hero and the page body cannot disagree about it.
+
+   Two values because the bar wraps to roughly four lines on a phone and two
+   on anything wider. */
+.has-demo-notice {
+  --notice-h: 6.5rem;
+}
+@media (min-width: 640px) {
+  .has-demo-notice {
+    --notice-h: 5.5rem;
+  }
+}
+

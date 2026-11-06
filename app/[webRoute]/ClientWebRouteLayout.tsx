@@ -53,7 +53,11 @@ const ClientWebRouteLayout: React.FC<Props> = ({
   const content = buildPageContent({ artist, webpage, shows, gallery: imageGallery });
 
   return (
-    <main className="bg-bg-dark text-white text-base">
+    <main
+      className={`bg-bg-dark text-white text-base ${
+        content.isDemo ? "has-demo-notice pb-[var(--notice-h)]" : ""
+      }`}
+    >
       <DemoNotice demo={content.demo} />
       <Header image={artist.imageURL} />
       <Hero
