@@ -181,12 +181,21 @@ const PhraseStrip: React.FC<{
         Phrase Of The Night
       </p>
 
+      {/* The price LEADS the phrase, on the same line, the way it does on
+          the whiteboard this is copied from. It is not a credit line — it is
+          the mechanic. A room can only know what it would take to answer
+          back if the number is up there beside the words, in the same size
+          as the words. Tucking it underneath as a byline, which is what this
+          did first, hides the only thing that makes it an auction. */}
       <div className="relative mt-[0.6vw] min-h-[5vw]">
         {outgoing && (
           <p
             key={`out-${phraseKey(outgoing)}`}
             className="tv-phrase-out absolute inset-x-0 top-0 break-words text-[clamp(1.1rem,3.4vw,4.6rem)] font-bold uppercase leading-none text-white/70"
           >
+            <span className="text-lime/70">
+              {dollars(outgoing.amountCents)}
+            </span>{" "}
             {outgoing.text}
           </p>
         )}
@@ -195,6 +204,7 @@ const PhraseStrip: React.FC<{
             key={`in-${phraseKey(phrase)}`}
             className="tv-phrase-in relative break-words text-[clamp(1.1rem,3.4vw,4.6rem)] font-bold uppercase leading-none text-white"
           >
+            <span className="text-lime">{dollars(phrase.amountCents)}</span>{" "}
             {phrase.text}
           </p>
         )}
@@ -202,8 +212,7 @@ const PhraseStrip: React.FC<{
 
       {phrase && (
         <p className="mt-[0.7vw] text-[clamp(0.7rem,1.4vw,1.9rem)] leading-none text-cyan">
-          <span className="font-bold text-lime">{phrase.name}</span>
-          {` · ${dollars(phrase.amountCents)}`}
+          {phrase.name}
         </p>
       )}
     </div>
