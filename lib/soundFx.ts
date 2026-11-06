@@ -70,6 +70,10 @@ export type SoundId =
   | "large-crowd"
   | "rain"
   | "battle"
+  // Game cues. Not sound effects and not fan-playable: the board's own voice,
+  // fired by what the game does rather than by anyone pressing anything.
+  | "fanfare"
+  | "sparkle"
   // Not a sound effect — the engineer's reference tone.
   | "test";
 
@@ -460,6 +464,172 @@ const SOUNDS: Record<SoundId, SoundSpec> = {
   // not just weather.
   battle: { label: "Battle", seconds: 20, bed: true, trim: BED_TRIM },
 
+  // ---- game cues ---------------------------------------------------------
+  //
+  // Synthesized rather than recorded, for the same reason thunder is: these
+  // have to be there the first time an artist starts a round, on a board
+  // opened on a borrowed laptop on venue wifi, and a file that has not
+  // finished downloading is a cue that does not fire.
+
+  fanfare: {
+    label: "Fanfare (winner)",
+    seconds: 2.6,
+    render: (ctx) => {
+      // Three notes up and then the chord: the shape a room recognises as
+      // "somebody won" before it has worked out what the notes were.
+      //
+      // Sawtooth through a filter that snaps open on each attack and closes
+      // as the note decays. That filter movement is most of what separates
+      // brass from a buzzer — a static sawtooth at this pitch is a doorbell.
+      const brass = (freq: number, t0: number, dur: number, peak: number) => {
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.Q.value = 1.1;
+        lp.frequency.setValueAtTime(700, t0);
+        lp.frequency.linearRampToValueAtTime(4600, t0 + 0.045);
+        lp.frequency.exponentialRampToValueAtTime(1500, t0 + dur);
+
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(peak, t0 + 0.022);
+        g.gain.setValueAtTime(peak, t0 + dur * 0.55);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        lp.connect(g).connect(ctx.destination);
+
+        // A detuned pair, not one oscillator. Two players a few cents apart
+        // beat against each other and read as a section; one reads as a
+        // synthesizer, which is the wrong instrument for this gesture.
+        [0, 7].forEach((cents) => {
+          const osc = ctx.createOscillator();
+          osc.type = "sawtooth";
+          osc.frequency.value = freq * Math.pow(2, cents / 1200);
+          osc.connect(lp);
+          osc.start(t0);
+          osc.stop(t0 + dur + 0.05);
+        });
+      };
+
+      const C5 = 523.25;
+      const E5 = 659.25;
+      const G5 = 783.99;
+      const C6 = 1046.5;
+
+      // The peaks here look low because eight detuned sawtooths summing is
+      // loud: at the obvious 0.5 the raw render reached 2.54, and while
+      // level() scales every buffer anyway, that only works if the OFFLINE
+      // render did not clip on the way. The spec leaves clipping to the
+      // hardware and Chrome renders past unity faithfully, but a cue that
+      // depends on that is a cue that distorts in whatever browser the venue
+      // actually opened. Scaled to land just under 1.0 raw; levelling then
+      // brings it up to the same loudness as everything else in the
+      // catalogue, which is where it belongs.
+      //
+      // The pickup: short, even, and deliberately a touch quieter than the
+      // chord, so the chord lands as the arrival rather than as a fourth note.
+      brass(C5, 0.0, 0.17, 0.18);
+      brass(E5, 0.15, 0.17, 0.19);
+      brass(G5, 0.3, 0.19, 0.2);
+
+      // The arrival, held. Spread across the octave rather than a close
+      // triad — a wide chord sounds like more players.
+      [C5, E5, G5, C6].forEach((f) => brass(f, 0.48, 1.9, 0.15));
+
+      // Timpani under the arrival. Without something below 150Hz the chord
+      // sits thin on a PA and the moment has no floor.
+      const drum = ctx.createOscillator();
+      drum.type = "sine";
+      drum.frequency.setValueAtTime(104, 0.48);
+      drum.frequency.exponentialRampToValueAtTime(62, 1.5);
+      const dg = ctx.createGain();
+      dg.gain.setValueAtTime(0.0001, 0.48);
+      dg.gain.linearRampToValueAtTime(0.33, 0.5);
+      dg.gain.exponentialRampToValueAtTime(0.0001, 2.0);
+      drum.connect(dg).connect(ctx.destination);
+      drum.start(0.48);
+      drum.stop(2.1);
+    },
+  },
+
+  sparkle: {
+    label: "Sparkle (reveal)",
+    // Longer than the cascade, so the last bells ring out inside the render
+    // rather than being cut off at the edge of the buffer.
+    seconds: 3.0,
+    render: (ctx) => {
+      // The sound of the title arriving a letter at a time. Paced at 70ms to
+      // match the 0.07s stagger on .tv-reveal-char, so on a title of any
+      // length the first second of this lands letter for letter with the
+      // sparkles on screen.
+      //
+      // Bells rather than sine pings: an FM pair at a non-integer ratio
+      // gives the inharmonic clang a struck bell has, and a pure sine at
+      // these frequencies is a telephone tone.
+      const bell = (freq: number, t0: number, dur: number, peak: number) => {
+        const carrier = ctx.createOscillator();
+        carrier.type = "sine";
+        carrier.frequency.value = freq;
+
+        const mod = ctx.createOscillator();
+        mod.type = "sine";
+        mod.frequency.value = freq * 3.47;
+        const modDepth = ctx.createGain();
+        // The index decays faster than the note, which is what makes a bell
+        // bright on the strike and pure as it rings out.
+        modDepth.gain.setValueAtTime(freq * 1.6, t0);
+        modDepth.gain.exponentialRampToValueAtTime(freq * 0.05, t0 + dur * 0.4);
+        mod.connect(modDepth).connect(carrier.frequency);
+
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(peak, t0 + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        carrier.connect(g).connect(ctx.destination);
+
+        mod.start(t0);
+        mod.stop(t0 + dur);
+        carrier.start(t0);
+        carrier.stop(t0 + dur);
+      };
+
+      // A pentatonic set, so any two bells that overlap are consonant
+      // whatever order the scatter puts them in. A scale with a semitone in
+      // it turns a dense cascade into a cluster.
+      const SCALE = [1046.5, 1174.7, 1396.9, 1568.0, 1760.0, 2093.0, 2349.3];
+      const rnd = mulberry32(17);
+      for (let i = 0; i < 22; i += 1) {
+        const t0 = i * 0.07 + rnd() * 0.02;
+        // Walking up the scale rather than hopping about it: a rising line
+        // reads as something being uncovered, which is the thing on screen.
+        const step = Math.min(
+          SCALE.length - 1,
+          Math.floor((i / 22) * SCALE.length + rnd() * 1.4)
+        );
+        bell(SCALE[step], t0, 0.9 + rnd() * 0.5, 0.22 + rnd() * 0.1);
+      }
+
+      // Two last bells an octave up, held, so the cue finishes rather than
+      // just running out of pings.
+      bell(SCALE[SCALE.length - 1] * 2, 1.62, 1.0, 0.2);
+      bell(SCALE[2] * 2, 1.68, 0.95, 0.16);
+
+      // A breath of air under the bells. Bandpassed noise swelling and
+      // falling away — on its own it is nothing, and without it the cascade
+      // sounds like it is happening in a different room from the band.
+      const air = noiseSource(ctx, 2.2, 91);
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.setValueAtTime(2600, 0);
+      bp.frequency.exponentialRampToValueAtTime(7200, 1.7);
+      bp.Q.value = 0.7;
+      const ag = ctx.createGain();
+      ag.gain.setValueAtTime(0.0001, 0);
+      ag.gain.linearRampToValueAtTime(0.26, 0.9);
+      ag.gain.exponentialRampToValueAtTime(0.0001, 2.2);
+      air.connect(bp).connect(ag).connect(ctx.destination);
+      air.start(0);
+    },
+  },
+
   test: {
     label: "Test tone",
     seconds: 1.2,
@@ -502,12 +672,30 @@ export const SOUND_LIST: {
   variants: SFX_FAMILIES[id]?.length || (SOUNDS[id].render ? 1 : 0),
 }));
 
-// Ids a fan is allowed to fire. Everything in the catalogue except the
-// reference tone, which exists for whoever is setting the gain and would be a
-// strange thing for a room to be able to trigger. Also the gate that stops an
-// unknown or crafted `sound` value reaching play().
+// Ids no fan may fire, however the request is shaped.
+//
+// The reference tone, because it exists for whoever is setting the gain and
+// would be a strange thing for a room to be able to trigger. The game cues,
+// because they MEAN something — a fanfare is the board saying somebody won,
+// and a fan who could fire it at will could tell the room a lie.
+// The cues the game fires. Exported so the operator panel can file them
+// apart from the catalogue: they still need auditioning at the desk — a cue
+// nobody has heard is a cue that fails in front of a room — but listing them
+// among the hits would say a fan could press them.
+export const GAME_CUE_IDS: readonly SoundId[] = ["fanfare", "sparkle"];
+
+const NOT_FAN_PLAYABLE: ReadonlySet<SoundId> = new Set<SoundId>([
+  "test",
+  ...GAME_CUE_IDS,
+]);
+
+export const isGameCue = (id: SoundId): boolean =>
+  NOT_FAN_PLAYABLE.has(id) && id !== "test";
+
+// Everything else. Also the gate that stops an unknown or crafted `sound`
+// value reaching play().
 const FAN_PLAYABLE: ReadonlySet<string> = new Set(
-  (Object.keys(SOUNDS) as SoundId[]).filter((id) => id !== "test")
+  (Object.keys(SOUNDS) as SoundId[]).filter((id) => !NOT_FAN_PLAYABLE.has(id))
 );
 
 export const isFanSoundId = (value: unknown): value is SoundId =>

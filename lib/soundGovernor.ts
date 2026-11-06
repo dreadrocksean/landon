@@ -53,9 +53,14 @@ export const SOUND_KIND: Record<SoundId, SoundKind> = {
   battle: "ambience",
   freebird: "heckle",
   boo: "heckle",
-  // The engineer's reference tone is never governed — it is only ever played
-  // forced, and a board that refused to prove it works would be useless.
+  // Never governed — only ever played forced. The reference tone because a
+  // board that refused to prove it works would be useless; the game cues
+  // because a cooldown that swallowed the fanfare would leave the room
+  // staring at a winner's name in silence. The kind is carried only so the
+  // operator panel can file them somewhere.
   test: "hit",
+  fanfare: "hit",
+  sparkle: "hit",
 };
 
 export type SoundWhen = "any" | "during" | "between";

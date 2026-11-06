@@ -12,7 +12,13 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SOUND_LIST, pickNextVariant } from './soundFx.ts';
+import {
+  GAME_CUE_IDS,
+  SOUND_LIST,
+  isFanSoundId,
+  isGameCue,
+  pickNextVariant,
+} from './soundFx.ts';
 import {
   createRoomGovernor,
   resolvePlaying,
@@ -338,5 +344,36 @@ describe('sound families', () => {
     }
     assert.equal(SOUND_KIND.explosion, 'hit');
     assert.equal(SOUND_KIND.battle, 'ambience');
+  });
+});
+
+// The game's own voice. A fanfare means "somebody won" and a sparkle means
+// "here is the answer", so unlike every other sound on the board these two
+// make a CLAIM — which is exactly why no fan may fire them.
+describe('game cues', () => {
+  test('both cues can actually make a noise', () => {
+    for (const id of GAME_CUE_IDS) {
+      const entry = SOUND_LIST.find((s) => s.id === id);
+      assert.ok(entry, `${id} missing from SOUND_LIST`);
+      assert.ok(entry.variants >= 1, `${id} has nothing to play`);
+    }
+  });
+
+  test('no fan can fire one, however the request is shaped', () => {
+    for (const id of GAME_CUE_IDS) {
+      assert.equal(isFanSoundId(id), false, `${id} is fan-playable`);
+    }
+  });
+
+  test('the reference tone is not mistaken for a game cue', () => {
+    assert.equal(isFanSoundId('test'), false);
+    assert.equal(isGameCue('test'), false);
+  });
+
+  test('every ordinary effect is still fan-playable', () => {
+    const blocked = SOUND_LIST.filter(
+      (s) => s.id !== 'test' && !isGameCue(s.id) && !isFanSoundId(s.id)
+    ).map((s) => s.id);
+    assert.deepEqual(blocked, [], `unexpectedly blocked: ${blocked}`);
   });
 });

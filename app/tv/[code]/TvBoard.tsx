@@ -24,6 +24,7 @@ import {
   createSoundBoard,
   isFanSoundId,
   SOUND_LIST,
+  isGameCue,
   SoundBoard,
   SoundId,
 } from "@/lib/soundFx";
@@ -328,6 +329,16 @@ const TvBoard: React.FC<TvBoardProps> = ({
   // a winner that just landed from one that was already there when the board
   // opened.
   const gamePrimedRef = useRef(false);
+  // ...and priming has to happen against DELIVERED state, not against the
+  // null this component starts with. The game arrives asynchronously, so a
+  // priming pass on first render primes against "no game" and then treats
+  // the first snapshot as news — which fired the takeover on every reload
+  // into a round that had already been won. Tolerable while that was only a
+  // blur; not tolerable now that it is a brass fanfare through the PA.
+  const gameSeenRef = useRef(false);
+  // The reveal cue, once per round, on the same terms.
+  const revealedRef = useRef<string | null>(null);
+  const revealPrimedRef = useRef(false);
   const fanfareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -431,6 +442,17 @@ const TvBoard: React.FC<TvBoardProps> = ({
     visualTimer.current = setTimeout(() => setVisual(null), VISUAL_MS[kind]);
   }, []);
 
+  // Both game cues go out through here, so they land in data-sound-last like
+  // a fan's sound does. The note on fxSeqRef applies to these more than to
+  // anything else on the board: a cue fires off game state rather than off a
+  // press, so without a trace the only way to know one went out is to have
+  // been standing in the room at the time.
+  const cue = useCallback((id: SoundId) => {
+    if (!soundRef.current?.play(id, { force: true })) return;
+    fxSeqRef.current += 1;
+    setLastFx(`${id}:${fxSeqRef.current}`);
+  }, []);
+
   const audition = useCallback((id: SoundId) => {
     soundRef.current?.play(id, { force: true });
     // The panel previews the picture as well as the sound. Checking one
@@ -474,7 +496,10 @@ const TvBoard: React.FC<TvBoardProps> = ({
     if (!board.artistId || !board.showId) return;
     const unsub = onSnapshot(
       doc(db, "artists", board.artistId, "shows", board.showId),
-      (snap) => setGame(toShowGame((snap.data() ?? {}).game)),
+      (snap) => {
+        gameSeenRef.current = true;
+        setGame(toShowGame((snap.data() ?? {}).game));
+      },
       () => {
         // Cosmetic, like the reactions listener: a refused read must not take
         // the board down. No game simply means no game.
@@ -494,6 +519,10 @@ const TvBoard: React.FC<TvBoardProps> = ({
   useEffect(() => {
     const key = game?.winner ? `${game.id}:${game.winner.uid}` : null;
     if (!gamePrimedRef.current) {
+      // Nothing has arrived yet, so there is nothing to prime against — and
+      // priming against the starting null is what made a reload read as a
+      // win. The subscription changes `game`, which re-runs this.
+      if (!gameSeenRef.current) return;
       gamePrimedRef.current = true;
       lastWinnerRef.current = key;
       return;
@@ -505,12 +534,37 @@ const TvBoard: React.FC<TvBoardProps> = ({
     if (game?.status === "closed") return;
     setGameFanfare(key);
     setConfetti(true);
+    // The whole point of patching the board into the PA: the room hears that
+    // somebody won without having to be looking at the screen. Forced, so no
+    // cooldown left over from the crowd's effects can swallow it — a name on
+    // a dimmed screen in silence is worse than no takeover at all.
+    cue("fanfare");
     if (fanfareTimer.current) clearTimeout(fanfareTimer.current);
     fanfareTimer.current = setTimeout(() => {
       setGameFanfare(null);
       setConfetti(false);
     }, GAME_FANFARE_MS);
-  }, [game?.id, game?.winner]);
+  }, [game?.id, game?.winner, cue]);
+
+  // The sparkle under the reveal.
+  //
+  // Paced to land with the letters — see the `sparkle` render, whose bells
+  // are spaced at the same 70ms as the stagger on .tv-reveal-char — so the
+  // room hears the title being uncovered rather than hearing a chime next to
+  // an animation.
+  useEffect(() => {
+    const key =
+      game?.status === "closed" && game.revealedSong ? game.id : null;
+    if (!revealPrimedRef.current) {
+      if (!gameSeenRef.current) return;
+      revealPrimedRef.current = true;
+      revealedRef.current = key;
+      return;
+    }
+    if (!key || key === revealedRef.current) return;
+    revealedRef.current = key;
+    cue("sparkle");
+  }, [game?.id, game?.status, game?.revealedSong, cue]);
 
   useEffect(() => {
     if (!fxOn || !board.artistId || !board.showId) return;
@@ -1293,9 +1347,32 @@ const TvBoard: React.FC<TvBoardProps> = ({
                     </button>
                   ))}
 
+                  {/* The game's own cues, apart from the catalogue because
+                      nobody can press them during a show — they fire off what
+                      the game does. They are here to be HEARD before doors,
+                      since a fanfare nobody has levelled is a fanfare that
+                      goes off too loud in front of a room. */}
+                  <div className="mt-[0.4vw]">
+                    <div className="px-[0.1vw] pb-[0.25vw] text-[clamp(0.4rem,0.62vw,0.8rem)] font-bold uppercase tracking-[0.25em] text-cyan/50">
+                      Game cues
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-[0.3vw]">
+                      {SOUND_LIST.filter((s) => isGameCue(s.id)).map((sound) => (
+                        <button
+                          key={sound.id}
+                          type="button"
+                          onClick={() => audition(sound.id)}
+                          className="rounded-[0.4vw] border border-cyan/40 bg-light-dark/80 px-[0.6vw] py-[0.3vw] text-[clamp(0.45rem,0.72vw,0.9rem)] font-bold uppercase tracking-[0.1em] leading-none text-white hover:bg-light-dark focus:outline-none focus-visible:ring-[0.2vw] focus-visible:ring-lime"
+                        >
+                          {sound.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {PANEL_GROUPS.map(({ kind, title }) => {
                     const items = SOUND_LIST.filter(
-                      (s) => s.kind === kind && s.id !== "test"
+                      (s) => s.kind === kind && s.id !== "test" && !isGameCue(s.id)
                     );
                     if (!items.length) return null;
                     return (
