@@ -532,3 +532,48 @@ body::-webkit-scrollbar-thumb {
   }
 }
 
+
+/* Phrase Of The Night changing hands.
+   The outgoing phrase is struck through and pushed aside while the new one
+   drops in over it. Transform and opacity only, so the whole thing runs on
+   the GPU of whatever stick is driving the venue screen. */
+@keyframes tvPhraseOut {
+  0% {
+    opacity: 0.7;
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    opacity: 0.55;
+    transform: translateX(0) rotate(-0.4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-14%) rotate(-2.5deg);
+  }
+}
+
+.tv-phrase-out {
+  text-decoration: line-through;
+  text-decoration-color: #f33274;
+  text-decoration-thickness: 0.22em;
+  animation: tvPhraseOut 2.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes tvPhraseIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-0.5em) scale(1.06);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tv-phrase-in {
+  animation: tvPhraseIn 0.75s cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+}

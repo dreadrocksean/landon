@@ -20,6 +20,7 @@ import {
 import { db } from "@/lib/gcp/client";
 import { Board, BoardSong, BoardTip, toBoard } from "@/lib/board";
 import { GAME_LABEL, ShowGame, toShowGame } from "@/lib/game";
+import { ShowPhrase, dollars, phraseKey, toShowPhrase } from "@/lib/phrase";
 import {
   createSoundBoard,
   isFanSoundId,
@@ -127,6 +128,11 @@ const HECKLE_CALLOUT_MS = 4500;
 // enough for a room to look up, find the name and react to it.
 const GAME_FANFARE_MS = 7000;
 
+// How long the phrase being taken down stays on screen, struck through,
+// while the new one lands on top of it. Long enough to register as somebody
+// losing rather than as a value quietly changing.
+const PHRASE_SWAP_MS = 2600;
+
 // Rain, built once at module load the way the confetti is. Irregular by
 // construction — a sheet where every streak shares a duration pulses in step
 // and reads as a screensaver rather than weather.
@@ -151,6 +157,58 @@ const RevealedTitle: React.FC<{ text: string }> = ({ text }) => (
     ))}
   </span>
 );
+
+// The wall's standing phrase, and the moment it changes hands.
+//
+// Permanent real estate rather than a banner: the tip announcement is
+// transient by design and this is the opposite — somebody paid for it to sit
+// there all night, and a room has to be able to look up at any point and
+// read it.
+//
+// The outgoing phrase is rendered UNDERNEATH the incoming one and struck
+// through, so the swap reads as somebody being beaten rather than as a value
+// quietly changing between frames. That is the whole feel of the feature:
+// the price on the board is an argument, and this is the part where somebody
+// wins it.
+const PhraseStrip: React.FC<{
+  phrase: ShowPhrase | null;
+  outgoing: ShowPhrase | null;
+}> = ({ phrase, outgoing }) => {
+  if (!phrase && !outgoing) return null;
+  return (
+    <div className="relative mt-auto pt-[1.6vw]">
+      <p className="text-[clamp(0.6rem,1.1vw,1.4rem)] font-bold uppercase tracking-[0.25em] text-rose/70">
+        Phrase Of The Night
+      </p>
+
+      <div className="relative mt-[0.6vw] min-h-[5vw]">
+        {outgoing && (
+          <p
+            key={`out-${phraseKey(outgoing)}`}
+            className="tv-phrase-out absolute inset-x-0 top-0 break-words text-[clamp(1.1rem,3.4vw,4.6rem)] font-bold uppercase leading-none text-white/70"
+          >
+            {outgoing.text}
+          </p>
+        )}
+        {phrase && (
+          <p
+            key={`in-${phraseKey(phrase)}`}
+            className="tv-phrase-in relative break-words text-[clamp(1.1rem,3.4vw,4.6rem)] font-bold uppercase leading-none text-white"
+          >
+            {phrase.text}
+          </p>
+        )}
+      </div>
+
+      {phrase && (
+        <p className="mt-[0.7vw] text-[clamp(0.7rem,1.4vw,1.9rem)] leading-none text-cyan">
+          <span className="font-bold text-lime">{phrase.name}</span>
+          {` · ${dollars(phrase.amountCents)}`}
+        </p>
+      )}
+    </div>
+  );
+};
 
 const RAINDROP_COUNT = 90;
 const RAINDROPS = Array.from({ length: RAINDROP_COUNT }, (_, i) => ({
@@ -320,6 +378,19 @@ const TvBoard: React.FC<TvBoardProps> = ({
   // because that listener only exists on a board opened with ?fx=1 — the
   // desk's copy — and the game has to appear on every screen in the venue.
   const [game, setGame] = useState<ShowGame | null>(null);
+  // The phrase holding the wall, on the same subscription as the game: one
+  // document, one listener, and a bid lands on every screen in the venue at
+  // the same moment.
+  const [phrase, setPhrase] = useState<ShowPhrase | null>(null);
+  // The one being taken down, held just long enough to be SEEN being taken
+  // down. The swap is the drama — a phrase that simply changes between
+  // frames reads as a page refresh, not as somebody being beaten.
+  const [outgoing, setOutgoing] = useState<ShowPhrase | null>(null);
+  // What is on screen right now, readable from inside the snapshot callback
+  // without making `phrase` a dependency of the subscription.
+  const phraseRef = useRef<ShowPhrase | null>(null);
+  const phraseKeyRef = useRef<string | null>(null);
+  const outgoingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Fires once when a winner first appears, so the takeover is an EVENT
   // rather than a state the screen sits in.
   const [gameFanfare, setGameFanfare] = useState<string | null>(null);
@@ -498,7 +569,27 @@ const TvBoard: React.FC<TvBoardProps> = ({
       doc(db, "artists", board.artistId, "shows", board.showId),
       (snap) => {
         gameSeenRef.current = true;
-        setGame(toShowGame((snap.data() ?? {}).game));
+        const data = snap.data() ?? {};
+        setGame(toShowGame(data.game));
+
+        const next = toShowPhrase(data.phrase);
+        const key = phraseKey(next);
+        const held = phraseKeyRef.current;
+        // Only a genuine change, and never on first paint — a board opened
+        // at midnight must not perform the swap for a phrase that has been
+        // up since nine. Same priming rule as the winner takeover, for the
+        // same reason.
+        if (held !== null && key !== held && phraseRef.current) {
+          setOutgoing(phraseRef.current);
+          if (outgoingTimer.current) clearTimeout(outgoingTimer.current);
+          outgoingTimer.current = setTimeout(
+            () => setOutgoing(null),
+            PHRASE_SWAP_MS
+          );
+        }
+        phraseRef.current = next;
+        phraseKeyRef.current = key;
+        setPhrase(next);
       },
       () => {
         // Cosmetic, like the reactions listener: a refused read must not take
@@ -984,6 +1075,8 @@ const TvBoard: React.FC<TvBoardProps> = ({
         </div>
           </>
         )}
+
+        <PhraseStrip phrase={phrase} outgoing={outgoing} />
       </div>
 
       {/* The invitation. Everything here is aimed at someone glancing up from
