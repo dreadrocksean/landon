@@ -907,19 +907,32 @@ export const createSoundBoard = (options?: {
         }
 
         if (!spec.render) return;
-        const offline = new Offline(
-          1,
-          Math.ceil(spec.seconds * SAMPLE_RATE),
-          SAMPLE_RATE
-        );
-        spec.render(offline);
-        const rendered = await offline.startRendering();
-        needsTailFade.set(rendered, endsAbruptly(rendered, level(rendered)));
-        buffers.set(id, [rendered]);
+        // Caught per sound, like the file path above it. An unguarded synth
+        // meant one bad render rejected the whole Promise.all, which
+        // rejected renderAll, which rejected unlock — and took every other
+        // sound on the board down with it over one broken button.
+        try {
+          const offline = new Offline(
+            1,
+            Math.ceil(spec.seconds * SAMPLE_RATE),
+            SAMPLE_RATE
+          );
+          spec.render(offline);
+          const rendered = await offline.startRendering();
+          needsTailFade.set(rendered, endsAbruptly(rendered, level(rendered)));
+          buffers.set(id, [rendered]);
+        } catch (err) {
+          console.error(`soundFx: ${id} failed to render`, err);
+        }
       })
     );
   };
 
+  // NEVER throws. Every caller treats it as "did the board arm?", and an
+  // unlock that rejects instead means the board sits on `locked` forever
+  // with an unhandled rejection in a console nobody is looking at — which
+  // was one of three ways the sound could die on a board mid-gig and not
+  // come back.
   const unlock = async () => {
     if (typeof window === "undefined") return false;
     const AC =
@@ -928,31 +941,54 @@ export const createSoundBoard = (options?: {
         .webkitAudioContext;
     if (!AC) return false;
 
-    if (!ctx) {
-      ctx = new AC();
-      master = ctx.createGain();
-      master.gain.value = volume;
-      master.connect(ctx.destination);
-    }
-
-    // A context built outside a gesture starts suspended, and resume() only
-    // succeeds from inside one — so this is called speculatively on mount (a
-    // kiosk or autoplay-allowed browser lets it through and the venue never
-    // sees a prompt) and again from the enable button when it doesn't.
     try {
+      // A context that has been closed can never resume, so a stale one is
+      // replaced rather than retried. Constructing one can also throw —
+      // browsers cap how many a page may hold — and that has to read as
+      // "not armed", not as an exception out of a click handler.
+      if (!ctx || ctx.state === "closed") {
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = volume;
+        master.connect(ctx.destination);
+        // Buffers belong to the context that decoded them.
+        buffers.clear();
+        rendering = null;
+        ready = false;
+      }
+
+      // A context built outside a gesture starts suspended, and resume()
+      // only succeeds from inside one — so this is called speculatively on
+      // mount (a kiosk or autoplay-allowed browser lets it through and the
+      // venue never sees a prompt) and again from the enable button when it
+      // doesn't.
       await ctx.resume();
-    } catch {
+      if (ctx.state !== "running") return false;
+
+      if (!buffers.size) {
+        // Shared so a second press landing mid-render does not start over.
+        //
+        // Cleared again afterwards if it produced nothing. Holding a settled
+        // failed promise here was the bug that made a dead board
+        // unrecoverable: every later press — including the enable button —
+        // awaited that same already-finished promise, found no buffers, and
+        // reported failure without ever retrying. Only a brand new document
+        // could escape it.
+        rendering = rendering ?? renderAll(ctx);
+        try {
+          await rendering;
+        } finally {
+          if (!buffers.size) rendering = null;
+        }
+      }
+      ready = buffers.size > 0;
+      return ready;
+    } catch (err) {
+      console.error("soundFx unlock failed:", err);
+      if (!buffers.size) rendering = null;
+      ready = false;
       return false;
     }
-    if (ctx.state !== "running") return false;
-
-    if (!buffers.size) {
-      // Guard against a second press landing mid-render and starting over.
-      rendering = rendering ?? renderAll(ctx);
-      await rendering;
-    }
-    ready = buffers.size > 0;
-    return ready;
   };
 
   const stopBed = (id: SoundId, at: number) => {

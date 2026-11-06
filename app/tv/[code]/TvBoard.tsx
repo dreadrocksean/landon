@@ -225,6 +225,20 @@ const PhraseStrip: React.FC<{
   );
 };
 
+// A rubber stamp, slightly off true, because a stamp that is perfectly
+// square reads as a UI badge and the point of this one is that somebody
+// WON something.
+//
+// It earns its place beside the name in the closed-round panel and nowhere
+// else: the open-round panel and the fanfare takeover already carry "Got it
+// first" and "Named it first" above the name, and a stamp as well would be
+// saying the same thing twice in two type sizes.
+const WinnerStamp: React.FC = () => (
+  <span className="ml-[1vw] inline-block -rotate-6 rounded-[0.3vw] border-[0.18vw] border-lime px-[0.9vw] py-[0.25vw] align-middle text-[clamp(0.55rem,1.15vw,1.5rem)] font-bold uppercase leading-none tracking-[0.3em] text-lime">
+    Winner
+  </span>
+);
+
 const RAINDROP_COUNT = 90;
 const RAINDROPS = Array.from({ length: RAINDROP_COUNT }, (_, i) => ({
   left: (i * 37.31) % 100,
@@ -475,10 +489,30 @@ const TvBoard: React.FC<TvBoardProps> = ({
     // Try without a gesture first. A kiosk-mode or autoplay-allowed browser
     // lets this through, and then the venue never sees a prompt at all.
     let mounted = true;
-    sounds.unlock().then((ok) => {
-      if (mounted) setSoundReady(ok);
-    });
+    sounds.unlock().then(
+      (ok) => {
+        if (mounted) setSoundReady(ok);
+      },
+      // unlock() is written never to reject, and this is here anyway: if it
+      // ever does, an unhandled rejection leaves the board reporting
+      // `locked` with no way back, which is a bad way to find out.
+      () => {
+        if (mounted) setSoundReady(false);
+      }
+    );
+
+    // Hand the audio context back BEFORE the document goes away.
+    //
+    // React's cleanup does not reliably run on a reload, and a browser caps
+    // how many audio contexts a page may hold. Leaking one per refresh is
+    // how the board reached that cap and stopped making any sound at all —
+    // and why refreshing never fixed it while closing the page did, since
+    // only tearing the tab down reclaimed them.
+    const release = () => sounds.close();
+    window.addEventListener("pagehide", release);
+
     return () => {
+      window.removeEventListener("pagehide", release);
       mounted = false;
       // Only surrender the ref if it still points at THIS board. React runs
       // this effect twice in development, and an older instance's cleanup
@@ -490,14 +524,21 @@ const TvBoard: React.FC<TvBoardProps> = ({
     };
   }, []);
 
+  // Retries properly now. It used to be able to press against a board whose
+  // first attempt had failed and get the same failure back forever, because
+  // the failed render was cached — see unlock(). Pressing it is a real
+  // second chance.
   const enableSound = useCallback(() => {
     const sounds = soundRef.current;
     if (!sounds) return;
-    sounds.unlock().then((ok) => {
-      setSoundReady(ok);
-      // Immediate proof it works, and it doubles as the level-setting tone.
-      if (ok) sounds.play("test", { force: true });
-    });
+    sounds.unlock().then(
+      (ok) => {
+        setSoundReady(ok);
+        // Immediate proof it works, and it doubles as the level-setting tone.
+        if (ok) sounds.play("test", { force: true });
+      },
+      () => setSoundReady(false)
+    );
   }, []);
 
   // Raise the picture for a sound that just played.
@@ -990,6 +1031,7 @@ const TvBoard: React.FC<TvBoardProps> = ({
                   <p className="mt-[1.4vw] text-[clamp(1rem,2.4vw,3.2rem)] font-bold leading-tight text-lime">
                     {game.winner.name}
                     {game.winner.artistBonus ? " ★" : ""}
+                    <WinnerStamp />
                   </p>
                 ) : (
                   <p className="mt-[1.4vw] text-[clamp(1rem,2.2vw,2.8rem)] leading-tight text-cyan">

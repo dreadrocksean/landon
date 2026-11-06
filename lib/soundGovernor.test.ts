@@ -13,6 +13,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  createSoundBoard,
   GAME_CUE_IDS,
   SOUND_LIST,
   isFanSoundId,
@@ -375,5 +376,64 @@ describe('game cues', () => {
       (s) => s.id !== 'test' && !isGameCue(s.id) && !isFanSoundId(s.id)
     ).map((s) => s.id);
     assert.deepEqual(blocked, [], `unexpectedly blocked: ${blocked}`);
+  });
+});
+
+// The board stopped making noise mid-gig, and refreshing never brought it
+// back — only closing the page and typing the URL again did. Three faults
+// compounded, and these pin the two that were testable without a browser.
+describe('a board that fails to arm can try again', () => {
+  // Minimal stand-ins. The real ones live in the browser; what is under test
+  // is the engine's own bookkeeping when they misbehave.
+  const withFakeAudio = async (
+    makeContext: () => unknown,
+    fn: (board: ReturnType<typeof createSoundBoard>) => Promise<void>
+  ) => {
+    const g = globalThis as Record<string, unknown>;
+    const saved = { AudioContext: g.AudioContext, OfflineAudioContext: g.OfflineAudioContext, window: g.window };
+    g.AudioContext = makeContext;
+    g.OfflineAudioContext = undefined;
+    g.window = g;
+    try {
+      await fn(createSoundBoard());
+    } finally {
+      g.AudioContext = saved.AudioContext;
+      g.OfflineAudioContext = saved.OfflineAudioContext;
+      g.window = saved.window;
+    }
+  };
+
+  test('an unlock that throws reports failure rather than rejecting', async () => {
+    await withFakeAudio(
+      function () {
+        throw new Error('too many audio contexts');
+      },
+      async (board) => {
+        // The bug: this rejected, nothing caught it, and the board sat on
+        // "locked" with no way back.
+        await assert.doesNotReject(() => board.unlock());
+        assert.equal(await board.unlock(), false);
+        assert.equal(board.isReady(), false);
+      }
+    );
+  });
+
+  test('a failed attempt does not poison every attempt after it', async () => {
+    let attempts = 0;
+    await withFakeAudio(
+      function () {
+        attempts += 1;
+        throw new Error('nope');
+      },
+      async (board) => {
+        await board.unlock();
+        await board.unlock();
+        await board.unlock();
+        // Each press is a real retry. The cached failed render used to make
+        // every attempt after the first a no-op that returned the same
+        // failure without trying anything.
+        assert.equal(attempts, 3, `expected 3 real attempts, got ${attempts}`);
+      }
+    );
   });
 });
