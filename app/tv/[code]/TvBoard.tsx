@@ -19,7 +19,13 @@ import {
 
 import { db } from "@/lib/gcp/client";
 import { Board, BoardSong, BoardTip, toBoard } from "@/lib/board";
-import { GAME_LABEL, ShowGame, toShowGame } from "@/lib/game";
+import {
+  GAME_LABEL,
+  ShowGame,
+  gameHoldsBoard,
+  gameHoldsUntil,
+  toShowGame,
+} from "@/lib/game";
 import { ShowPhrase, dollars, phraseKey, toShowPhrase } from "@/lib/phrase";
 import {
   createSoundBoard,
@@ -176,8 +182,8 @@ const PhraseStrip: React.FC<{
 }> = ({ phrase, outgoing }) => {
   if (!phrase && !outgoing) return null;
   return (
-    <div className="relative mt-auto pt-[1.6vw]">
-      <p className="text-[clamp(0.6rem,1.1vw,1.4rem)] font-bold uppercase tracking-[0.25em] text-rose/70">
+    <div className="relative mt-auto pt-[1.6vw] text-center">
+      <p className="text-[clamp(0.6rem,1.2vw,1.6rem)] font-bold uppercase tracking-[0.25em] text-rose/70">
         Phrase Of The Night
       </p>
 
@@ -187,11 +193,11 @@ const PhraseStrip: React.FC<{
           back if the number is up there beside the words, in the same size
           as the words. Tucking it underneath as a byline, which is what this
           did first, hides the only thing that makes it an auction. */}
-      <div className="relative mt-[0.6vw] min-h-[5vw]">
+      <div className="relative mt-[0.6vw] min-h-[6.5vw]">
         {outgoing && (
           <p
             key={`out-${phraseKey(outgoing)}`}
-            className="tv-phrase-out absolute inset-x-0 top-0 break-words text-[clamp(1.1rem,3.4vw,4.6rem)] font-bold uppercase leading-none text-white/70"
+            className="tv-phrase-out absolute inset-x-0 top-0 break-words text-center text-[clamp(1.4rem,4.6vw,6.2rem)] font-bold uppercase leading-[1.05] text-white/70"
           >
             <span className="text-lime/70">
               {dollars(outgoing.amountCents)}
@@ -202,7 +208,7 @@ const PhraseStrip: React.FC<{
         {phrase && (
           <p
             key={`in-${phraseKey(phrase)}`}
-            className="tv-phrase-in relative break-words text-[clamp(1.1rem,3.4vw,4.6rem)] font-bold uppercase leading-none text-white"
+            className="tv-phrase-in relative break-words text-center text-[clamp(1.4rem,4.6vw,6.2rem)] font-bold uppercase leading-[1.05] text-white"
           >
             <span className="text-lime">{dollars(phrase.amountCents)}</span>{" "}
             {phrase.text}
@@ -211,7 +217,7 @@ const PhraseStrip: React.FC<{
       </div>
 
       {phrase && (
-        <p className="mt-[0.7vw] text-[clamp(0.7rem,1.4vw,1.9rem)] leading-none text-cyan">
+        <p className="mt-[0.7vw] text-center text-[clamp(0.7rem,1.5vw,2rem)] leading-none text-cyan">
           {phrase.name}
         </p>
       )}
@@ -400,6 +406,10 @@ const TvBoard: React.FC<TvBoardProps> = ({
   const phraseRef = useRef<ShowPhrase | null>(null);
   const phraseKeyRef = useRef<string | null>(null);
   const outgoingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Bumped purely to re-run the render that reads the clock, so a finished
+  // round steps aside on its own rather than when something unrelated
+  // happens to re-render. Nothing reads the value.
+  const [, setGameTick] = useState(0);
   // Fires once when a winner first appears, so the takeover is an EVENT
   // rather than a state the screen sits in.
   const [gameFanfare, setGameFanfare] = useState<string | null>(null);
@@ -645,6 +655,17 @@ const TvBoard: React.FC<TvBoardProps> = ({
       setConfetti(false);
     }, GAME_FANFARE_MS);
   }, [game?.id, game?.winner, cue]);
+
+  // Retire the panel the moment its window lapses, rather than when some
+  // other render happens along. Same job as the fan screen's timer.
+  useEffect(() => {
+    const until = gameHoldsUntil(game);
+    if (!until) return;
+    const ms = until - Date.now();
+    if (ms <= 0) return;
+    const t = setTimeout(() => setGameTick((n) => n + 1), ms + 50);
+    return () => clearTimeout(t);
+  }, [game?.id, game?.status, game?.closedAt]);
 
   // The sparkle under the reveal.
   //
@@ -901,7 +922,7 @@ const TvBoard: React.FC<TvBoardProps> = ({
           </p>
         )}
 
-        {game ? (
+        {game && gameHoldsBoard(game) ? (
           /* A round replaces the STANDINGS, not the whole screen.
              Vote positions are irrelevant for the next minute, but the join
              QR on the right is more important than it has ever been — a game

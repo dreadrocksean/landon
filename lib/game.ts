@@ -29,7 +29,48 @@ export type ShowGame = {
   maskedSong?: string | null;
   revealedSong?: string | null;
   revealedArtist?: string | null;
+  // When the artist ended it. Drives how long the board keeps showing the
+  // result — see gameHoldsBoard.
+  closedAt?: number | null;
 };
+
+// How long a finished round keeps the board's main panel.
+//
+// The reveal is a MOMENT, not a state. Once the room has read the answer the
+// board's job goes back to the standings, which are the thing the whole
+// product is about. Clearing it depends on the artist pressing a button
+// mid-set, which they will not do, so a round they ended at nine was still
+// sitting on the wall at midnight with the Crowd Favorites hidden behind it.
+//
+// Matches ROUND_RESULTS_MS in the app's src/config/games.ts — the fan's
+// screen and the venue's screen let go of a finished round at the same time,
+// because they are the same moment ending.
+export const GAME_RESULTS_MS = 120000;
+
+// Whether the game panel should still own the board.
+//
+// An open round always does. A closed one does for GAME_RESULTS_MS and then
+// steps aside on its own. A closed round with no closedAt is treated as
+// expired rather than fresh: those were closed by a build that did not write
+// the field, so they are old by construction — which is also what clears the
+// one already stuck on a board today.
+export const gameHoldsBoard = (
+  game?: ShowGame | null,
+  now: number = Date.now()
+): boolean => {
+  if (!game) return false;
+  if (game.status === "open") return true;
+  if (typeof game.closedAt !== "number") return false;
+  return now - game.closedAt < GAME_RESULTS_MS;
+};
+
+// When it stops holding, or null if it is not on a clock. The board sets a
+// timer for exactly this so the panel steps aside on its own rather than
+// waiting for some unrelated re-render to notice.
+export const gameHoldsUntil = (game?: ShowGame | null): number | null =>
+  game && game.status === "closed" && typeof game.closedAt === "number"
+    ? game.closedAt + GAME_RESULTS_MS
+    : null;
 
 export const GAME_LABEL: Record<GameType, string> = {
   "name-that-song": "Name That Song",
@@ -68,5 +109,6 @@ export const toShowGame = (raw: unknown): ShowGame | null => {
     revealedSong: typeof g.revealedSong === "string" ? g.revealedSong : null,
     revealedArtist:
       typeof g.revealedArtist === "string" ? g.revealedArtist : null,
+    closedAt: typeof g.closedAt === "number" ? g.closedAt : null,
   };
 };
